@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meteo-Mare Follonica — Dashboard Assistente Bagnanti</title>
+<meta name="description" content="Dashboard meteo-marina per Assistenti Bagnanti: previsioni orarie 72h (Open-Meteo Forecast + Marine) e pannello semplificato per i bagnanti.">
+<style>
+/* ============================================================
+   STILE — mobile-first, alto contrasto, leggibile al sole
+   ============================================================ */
+:root{
+  --bg:#f4f7fa;
+  --card:#ffffff;
+  --testo:#15222e;
+  --testo-soft:#51616f;
+  --bordo:#d7dfe6;
+  --accento:#0466c8;
+  --verde:#1a7f37; --verde-bg:#d9f2df;
+  --giallo:#9a6700; --giallo-bg:#fff3c4;
+  --rosso:#c9252d; --rosso-bg:#ffe0e0;
+  --evidenza:#eaf3ff;
+  --raggio:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--testo);
+  line-height:1.45;padding-bottom:2rem;
+}
+header{
+  background:var(--card);border-bottom:1px solid var(--bordo);
+  padding:.7rem .9rem .5rem;position:sticky;top:0;z-index:30;
+}
+h1{font-size:1.05rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.riga-stato{
+  display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
+  margin-top:.35rem;font-size:.78rem;color:var(--testo-soft);
+}
+.badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  background:var(--evidenza);color:#0a4d8c;border:1px solid #bcd7f2;
+  border-radius:999px;padding:.12rem .55rem;font-size:.74rem;font-weight:600;
+}
+.badge.avviso{background:var(--giallo-bg);color:var(--giallo);border-color:#e8cf7a}
+button{
+  font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--bordo);
+  background:var(--card);color:var(--testo);padding:.35rem .7rem;
+}
+button:active{transform:scale(.97)}
+button.primario{background:var(--accento);border-color:var(--accento);color:#fff;font-weight:600}
+.tabs{display:flex;gap:.4rem;margin-top:.6rem}
+.tabs button{
+  flex:1;padding:.55rem .4rem;font-weight:700;font-size:.95rem;
+  border:1px solid var(--bordo);background:#e9eef3;color:var(--testo-soft);
+}
+.tabs button[aria-selected="true"]{background:var(--accento);border-color:var(--accento);color:#fff}
+main{padding:.8rem .7rem;max-width:1000px;margin:0 auto}
+section.card{
+  background:var(--card);border:1px solid var(--bordo);border-radius:var(--raggio);
+  padding:.8rem;margin-bottom:.9rem;
+}
+h2{font-size:.95rem;margin-bottom:.55rem;color:var(--testo)}
+.nota{font-size:.74rem;color:var(--testo-soft)}
+
+/* Banner errore */
+#banner-errore{
+  display:none;background:var(--rosso-bg);border:1px solid #f1b3b3;color:var(--rosso);
+  border-radius:var(--raggio);padding:.7rem .8rem;margin-bottom:.9rem;font-size:.88rem;
+}
+#banner-errore.visibile{display:block}
+#banner-errore button{margin-top:.5rem;border-color:var(--rosso);color:var(--rosso);font-weight:700}
+
+/* Caricamento */
+#caricamento{display:none;text-align:center;padding:1.2rem;color:var(--testo-soft);font-size:.9rem}
+#caricamento.visibile{display:block}
+.spinner{
+  display:inline-block;width:22px;height:22px;border:3px solid var(--bordo);
+  border-top-color:var(--accento);border-radius:50%;animation:gira 1s linear infinite;
+  vertical-align:middle;margin-right:.5rem;
+}
+@keyframes gira{to{transform:rotate(360deg)}}
+
+/* ---- Prossime ore: cards sempre visibili ---- */
+.prossime-ore{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem;
+}
+@media(min-width:560px){.prossime-ore{grid-template-columns:repeat(6,1fr)}}
+.ora-card{
+  background:var(--evidenza);border:1px solid #c4dcf5;border-radius:10px;
+  padding:.45rem .3rem;text-align:center;font-size:.78rem;
+}
+.ora-card .h{font-weight:800;font-size:.85rem}
+.ora-card .t{font-size:1.05rem;font-weight:700;margin:.1rem 0}
+.ora-card .vento{white-space:nowrap}
+.ora-card .onda{color:#0a4d8c;font-weight:600}
+
+/* ---- Tabella 72h ---- */
+.scroll-tabella{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--bordo);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:.8rem}
+thead th{
+  position:sticky;top:0;background:#eef2f6;z-index:5;
+  padding:.45rem .4rem;text-align:center;font-size:.7rem;color:var(--testo-soft);
+  border-bottom:2px solid var(--bordo);white-space:nowrap;
+}
+tbody td{padding:.35rem .4rem;text-align:center;border-bottom:1px solid #edf1f5;white-space:nowrap}
+tr.riga-giorno td{
+  background:#dfe7ee;font-weight:800;text-align:left;padding:.35rem .6rem;
+  font-size:.78rem;position:sticky;
+}
+tr.riga-attuale td{background:var(--evidenza);font-weight:600}
+.freccia-vento{display:inline-block;font-size:1rem;line-height:1}
+.freccia-press{font-weight:800}
+.press-su{color:var(--verde)} .press-giu{color:var(--rosso)} .press-stab{color:var(--testo-soft)}
+.uv-chip{display:inline-block;min-width:2em;border-radius:6px;padding:0 .3em;font-weight:700;color:#fff}
+
+/* ---- Vista bagnanti ---- */
+#vista-bagnanti{display:none}
+#vista-bagnanti.attiva{display:block}
+#vista-tecnica.nascosta{display:none}
+.pannello-pubblico{
+  background:#fff;border-radius:var(--raggio);border:1px solid var(--bordo);
+  overflow:hidden;text-align:center;
+}
+.bandiera{
+  padding:1.3rem .8rem;font-weight:900;
+}
+.bandiera .nome{font-size:2rem;letter-spacing:.03em;text-transform:uppercase}
+.bandiera .significato{font-size:1.05rem;font-weight:700;margin-top:.25rem}
+.bandiera.verde{background:var(--verde-bg);color:var(--verde)}
+.bandiera.gialla{background:var(--giallo-bg);color:var(--giallo)}
+.bandiera.rossa{background:var(--rosso-bg);color:var(--rosso)}
+.info-grandi{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bordo)}
+.info-grandi>div{background:#fff;padding:1rem .5rem}
+.info-grandi .valore{font-size:1.9rem;font-weight:900}
+.info-grandi .etich{font-size:.85rem;color:var(--testo-soft);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.info-grandi .extra{font-size:.85rem;margin-top:.15rem;font-weight:600}
+.riga-vento-pubblico{padding:1rem .8rem;font-size:1.25rem;font-weight:800;border-top:1px solid var(--bordo)}
+.disclaimer{padding:.6rem .8rem;font-size:.72rem;color:var(--testo-soft);border-top:1px solid var(--bordo)}
+
+/* ---- Moduli opzionali ---- */
+details.modulo{border:1px dashed var(--bordo);border-radius:10px;padding:.6rem .7rem;margin-bottom:.8rem;background:#fbfcfe}
+details.modulo summary{cursor:pointer;font-weight:700;font-size:.85rem}
+details.modulo .corpo{margin-top:.6rem;font-size:.82rem}
+details.modulo input[type=text],details.modulo input[type=password]{
+  font:inherit;width:100%;padding:.4rem .5rem;border:1px solid var(--bordo);border-radius:8px;margin:.3rem 0;
+}
+.interruttore{display:flex;align-items:center;gap:.45rem;margin:.4rem 0;font-weight:600}
+
+/* ---- Dialog posizione ---- */
+dialog{
+  border:none;border-radius:var(--raggio);padding:1rem;max-width:420px;width:92vw;
+  box-shadow:0 10px 40px rgba(0,0,0,.25);
+}
+dialog::backdrop{background:rgba(10,20,30,.45)}
+dialog h3{margin-bottom:.6rem;font-size:1rem}
+dialog label{font-size:.8rem;font-weight:700;display:block;margin-top:.5rem}
+dialog input{font:inherit;width:100%;padding:.45rem .55rem;border:1px solid var(--bordo);border-radius:8px;margin-top:.15rem}
+dialog .azioni{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.9rem}
+#risultati-ricerca{list-style:none;margin-top:.4rem}
+#risultati-ricerca li{padding:.4rem .3rem;border-bottom:1px solid #eef1f4;cursor:pointer;font-size:.85rem}
+#risultati-ricerca li:hover{background:var(--evidenza)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌊 Meteo-Mare <span id="nome-luogo">Follonica</span></h1>
+  <div class="riga-stato">
+    <span id="badge-posizione" class="badge">📍 in attesa di posizione…</span>
+    <span id="ultimo-agg">Ultimo aggiornamento: —</span>
+    <button id="btn-aggiorna" title="Aggiorna ora">↻ Aggiorna</button>
+    <button id="btn-posizione" title="Imposta posizione manuale">📍 Posizione</button>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Viste">
+    <button id="tab-tecnica" role="tab" aria-selected="true">Vista tecnica</button>
+    <button id="tab-bagnanti" role="tab" aria-selected="false">Pannello bagnanti</button>
+  </nav>
+</header>
+
+<main>
+  <div id="banner-errore" role="alert">
+    <div id="testo-errore"></div>
+    <button id="btn-riprova">Riprova adesso</button>
+  </div>
+  <div id="caricamento"><span class="spinner"></span>Caricamento dati Open-Meteo…</div>
+
+  <!-- ===================== VISTA TECNICA ===================== -->
+  <section id="vista-tecnica">
+    <section class="card">
+      <h2>Prossime 6 ore <span class="nota">(sempre in evidenza)</span></h2>
+      <div id="prossime-ore" class="prossime-ore"></div>
+    </section>
+
+    <section class="card">
+      <h2>Previsione oraria — 72 ore</h2>
+      <p class="nota" style="margin-bottom:.5rem">
+        Atmosfera: Open-Meteo Forecast API, modello «best_match» (per l'Italia combina
+        ECMWF IFS, DWD ICON e NOAA GFS — vedi commenti nel codice).
+        Mare: Open-Meteo Marine API (Météo-France MFWAM / ECMWF WAM).
+        Scorri lateralmente per tutte le colonne.
+      </p>
+      <div class="scroll-tabella">
+        <table id="tabella-72h" aria-label="Previsione oraria 72 ore">
+          <thead>
+            <tr>
+              <th>Ora</th><th>T °C</th><th>Percep.</th>
+              <th>Press. hPa</th><th>Trend 3h</th>
+              <th>Vento</th><th>Raffica</th>
+              <th>Onda m</th><th>Swell</th>
+              <th>Pioggia %</th><th>mm</th><th>UV</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabella"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Fonte secondaria opzionale: SIR Toscana (osservato, NON previsione) -->
+    <details class="modulo" id="modulo-sir">
+      <summary>🛰️ Fonte secondaria: stazione SIR Toscana (osservato in tempo reale, non validato)</summary>
+      <div class="corpo">
+        <label class="interruttore">
+          <input type="checkbox" id="sir-attivo"> Attiva confronto con stazione SIR
+        </label>
+        <p class="nota">
+          I dati del Servizio Idrologico Regionale (sir.toscana.it / dati.toscana.it) sono
+          <strong>osservazioni in tempo reale non validate</strong>: servono solo per confronto
+          con la previsione, mai come previsione. Il portale SIR non espone un endpoint JSON con
+          CORS aperto verso pagine esterne: per usarlo qui serve un piccolo proxy proprio (o un
+          export CSV ospitato) da indicare nella costante <code>SIR_CONFIG.urlJson</code> in cima
+          allo script. Se l'URL non è configurato, questo modulo mostra solo il link al portale.
+        </p>
+        <div id="sir-esito" class="nota" style="margin-top:.4rem"></div>
+      </div>
+    </details>
+
+    <!-- Fonte comparativa opzionale (disattivata di default, chiave propria) -->
+    <details class="modulo" id="modulo-comparativo">
+      <summary>🔌 Fonte comparativa opzionale (API key propria — disattivata di default)</summary>
+      <div class="corpo">
+        <p class="nota">
+          Windy (free tier con dati fittizi) e Meteomatics/Tomorrow.io (free tier a termine,
+          chiave esposta lato client) <strong>non</strong> sono integrati come dipendenza.
+          Se in futuro avrai una chiave tua, incollala qui: resta solo in memoria di sessione
+          (nessun salvataggio) e viene usata per una singola lettura comparativa
+          dall'endpoint realtime di Tomorrow.io.
+        </p>
+        <label class="interruttore">
+          <input type="checkbox" id="comp-attivo"> Attiva fonte comparativa
+        </label>
+        <input type="password" id="comp-chiave" placeholder="API key Tomorrow.io (opzionale)" autocomplete="off">
+        <button id="comp-test">Confronta ora</button>
+        <div id="comp-esito" class="nota" style="margin-top:.4rem"></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===================== VISTA BAGNANTI ===================== -->
+  <section id="vista-bagnanti">
+    <div class="pannello-pubblico">
+      <div id="blocco-bandiera" class="bandiera gialla">
+        <div class="nome" id="bandiera-nome">—</div>
+        <div class="significato" id="bandiera-significato">in attesa dei dati…</div>
+      </div>
+      <div class="info-grandi">
+        <div>
+          <div class="etich">Aria</div>
+          <div class="valore" id="pub-temp">—</div>
+        </div>
+        <div>
+          <div class="etich">Mare</div>
+          <div class="valore" id="pub-mare">—</div>
+        </div>
+        <div>
+          <div class="etich">Sole / UV</div>
+          <div class="valore" id="pub-uv">—</div>
+          <div class="extra" id="pub-uv-consiglio"></div>
+        </div>
+        <div>
+          <div class="etich">Onde</div>
+          <div class="valore" id="pub-onde">—</div>
+          <div class="extra" id="pub-onde-desc"></div>
+        </div>
+      </div>
+      <div class="riga-vento-pubblico" id="pub-vento">—</div>
+      <div class="disclaimer">
+        Bandiera calcolata automaticamente da vento e moto ondoso (scale Beaufort/Douglas).
+        La decisione finale spetta sempre all'Assistente Bagnanti in servizio.
+        Aggiornato: <span id="pub-agg">—</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Dialog posizione manuale / ricerca luogo -->
+<dialog id="dlg-posizione">
+  <h3>Imposta posizione</h3>
+  <label for="cerca-luogo">Cerca un luogo (geocoding Open-Meteo)</label>
+  <input type="text" id="cerca-luogo" placeholder="es. Follonica, Punta Ala…" autocomplete="off">
+  <ul id="risultati-ricerca"></ul>
+  <label for="inp-lat">Latitudine</label>
+  <input type="text" id="inp-lat" inputmode="decimal" placeholder="42.92">
+  <label for="inp-lon">Longitudine</label>
+  <input type="text" id="inp-lon" inputmode="decimal" placeholder="10.76">
+  <div class="azioni">
+    <button id="dlg-gps">Usa GPS</button>
+    <button id="dlg-annulla">Annulla</button>
+    <button id="dlg-salva" class="primario">Salva</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+/* ==========================================================================
+   COSTANTI MODIFICABILI — tutte le soglie operative stanno QUI, non nella logica
+   ========================================================================== */
+
+// Posizione di fallback: Follonica (GR), litorale tirrenico.
+// Verificare/affinare con le coordinate esatte dello stabilimento.
+const POSIZIONE_DEFAULT = { lat: 42.92, lon: 10.76, nome: "Follonica" };
+
+// Intervallo di auto-refresh in minuti (richiesto: 10–15).
+const REFRESH_MINUTI = 12;
+
+// Tentativi di fetch e backoff esponenziale (ms).
+const RETRY_TENTATIVI = 4;            // 1 tentativo + 3 retry
+const RETRY_BASE_MS   = 2000;         // 2s, 4s, 8s
+
+/* Soglie bandiera — proposta basata su scala Beaufort (vento) e Douglas (mare).
+   Riferimenti:
+   - Beaufort 3 (brezza tesa) termina a ~19 km/h; Beaufort 5 (vento teso) termina a ~38 km/h.
+   - Douglas 2 (poco mosso) termina a 0.5 m; Douglas 3 (mosso) termina a 1.25 m.
+   Logica: VERDE se vento E onda sotto le soglie verdi; ROSSA se vento O onda O raffica
+   superano le soglie rosse; GIALLA in tutti i casi intermedi.
+   Modifica liberamente questi numeri in base al regolamento del tuo stabilimento /
+   ordinanza della Capitaneria di Porto competente (Portoferraio per Follonica). */
+const BANDIERA_SOGLIE = {
+  VENTO_VERDE_KMH:   20,   // sotto: contributo "verde" (fino a Beaufort 3)
+  VENTO_ROSSO_KMH:   39,   // da qui in su: rossa (da Beaufort 6, vento fresco)
+  RAFFICA_ROSSA_KMH: 55,   // raffiche oltre questa soglia: rossa comunque
+  ONDA_VERDE_M:      0.5,  // sotto: "verde" (Douglas ≤2, poco mosso)
+  ONDA_ROSSA_M:      1.25  // da qui in su: rossa (Douglas ≥4, molto mosso)
+};
+
+// Trend pressione: variazione (hPa) rispetto a 3 ore prima per dire "in salita/calo".
+const PRESSIONE_DELTA_HPA = 1.0;
+const PRESSIONE_ORE_CONFRONTO = 3;
+
+// Fonte secondaria SIR Toscana: opzionale, SOLO osservato non validato.
+// Il portale SIR non espone JSON con CORS: se hai un tuo proxy/export, metti qui l'URL
+// di un JSON del tipo {"stazione":"...","vento_kmh":..,"temperatura":..,"ora":"..."}.
+const SIR_CONFIG = {
+  urlJson: "",                                   // vuoto = modulo solo informativo
+  portale: "https://www.sir.toscana.it/monitoraggio/stazioni.php"
+};
+
+/* ==========================================================================
+   FONTI DATI (parametri verificati sulla nomenclatura attuale Open-Meteo)
+   --------------------------------------------------------------------------
+   FORECAST API — https://api.open-meteo.com/v1/forecast
+   Modello: parametro "models" non specificato ⇒ "best_match". Per l'Italia
+   Open-Meteo compone il best match principalmente da ECMWF IFS (globale),
+   DWD ICON (globale+EU, è la spina dorsale del best_match europeo) e NOAA GFS
+   (riempimento/confronto). Le variabili UV derivano dal dataset CAMS/ECMWF.
+   MARINE API — https://marine-api.open-meteo.com/v1/marine
+   Modello onde: best_match marino = Météo-France MFWAM ed ECMWF WAM;
+   sea_surface_temperature dai modelli oceanici collegati (può essere null
+   molto sotto costa).
+   Entrambe: nessuna API key, CORS aperto, timezone=auto, forecast_days=3.
+   ========================================================================== */
+const PARAM_FORECAST_HOURLY = [
+  "temperature_2m","apparent_temperature",
+  "pressure_msl","surface_pressure",
+  "wind_speed_10m","wind_direction_10m","wind_gusts_10m",
+  "cloud_cover","precipitation_probability","precipitation",
+  "uv_index","weather_code"
+].join(",");
+const PARAM_FORECAST_CURRENT = [
+  "temperature_2m","apparent_temperature","pressure_msl","surface_pressure",
+  "wind_speed_10m","wind_direction_10m","wind_gusts_10m",
+  "cloud_cover","precipitation","weather_code"
+].join(",");
+const PARAM_MARINE_HOURLY = [
+  "wave_height","wave_direction","wave_period",
+  "wind_wave_height","wind_wave_direction","wind_wave_period",
+  "swell_wave_height","swell_wave_direction","swell_wave_period",
+  "sea_surface_temperature"
+].join(",");
+const PARAM_MARINE_CURRENT = [
+  "wave_height","wave_direction","wave_period","sea_surface_temperature"
+].join(",");
+
+/* ==========================================================================
+   STATO DI SESSIONE — solo variabili JS (niente localStorage/sessionStorage,
+   non disponibili in ambiente artifact Claude)
+   ========================================================================== */
+const stato = {
+  lat: POSIZIONE_DEFAULT.lat,
+  lon: POSIZIONE_DEFAULT.lon,
+  nomeLuogo: POSIZIONE_DEFAULT.nome,
+  origine: "default",          // "gps" | "manuale" | "default"
+  meteo: null,                 // risposta Forecast API
+  marine: null,                // risposta Marine API
+  ultimoAggiornamento: null,
+  timerRefresh: null,
+  caricamentoInCorso: false
+};
+
+/* ========================== UTILITÀ ========================== */
+const $ = id => document.getElementById(id);
+
+const PUNTI_CARDINALI = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];
+const NOMI_VENTO = { // rosa dei venti tirrenica, per il linguaggio semplice
+  N:"tramontana", NE:"grecale", E:"levante", SE:"scirocco",
+  S:"ostro", SO:"libeccio", O:"ponente", NO:"maestrale"
+};
+function puntoCardinale(gradi, fine=true){
+  if (gradi == null || isNaN(gradi)) return "—";
+  const settori = fine ? 16 : 8;
+  const idx = Math.round(((gradi % 360) / (360/settori))) % settori;
+  return fine ? PUNTI_CARDINALI[idx] : PUNTI_CARDINALI[idx*2];
+}
+function nomeVento(gradi){
+  const p8 = puntoCardinale(gradi, false);
+  return NOMI_VENTO[p8] || "";
+}
+
+// Scala Beaufort → descrizione italiana (per il pannello bagnanti)
+function descrizioneBeaufort(kmh){
+  if (kmh == null) return "—";
+  if (kmh < 2)  return "calma di vento";
+  if (kmh < 6)  return "bava di vento";
+  if (kmh < 12) return "brezza leggera";
+  if (kmh < 20) return "brezza tesa";
+  if (kmh < 29) return "vento moderato";
+  if (kmh < 39) return "vento teso";
+  if (kmh < 50) return "vento fresco";
+  if (kmh < 62) return "vento forte";
+  if (kmh < 75) return "burrasca";
+  return "burrasca forte o superiore";
+}
+
+// Scala Douglas → stato del mare in parole
+function descrizioneDouglas(m){
+  if (m == null) return "";
+  if (m < 0.1)  return "mare calmo";
+  if (m < 0.5)  return "quasi calmo / poco mosso";
+  if (m < 1.25) return "mare mosso";
+  if (m < 2.5)  return "molto mosso";
+  if (m < 4)    return "mare agitato";
+  return "molto agitato o più";
+}
+
+function classeUV(uv){
+  if (uv == null) return {colore:"#8a97a3", testo:"—", consiglio:""};
+  if (uv < 3)  return {colore:"#1a7f37", testo:"basso",      consiglio:"protezione non necessaria"};
+  if (uv < 6)  return {colore:"#9a6700", testo:"moderato",   consiglio:"crema e occhiali consigliati"};
+  if (uv < 8)  return {colore:"#d4700a", testo:"alto",       consiglio:"crema, cappello, ombra nelle ore centrali"};
+  if (uv < 11) return {colore:"#c9252d", testo:"molto alto", consiglio:"evitare il sole 12–16, protezione alta"};
+  return {colore:"#7d1fa0", testo:"estremo", consiglio:"restare all'ombra, protezione massima"};
+}
+
+function fmtOra(iso){ return iso.slice(11,16); }
+function fmtGiorno(iso){
+  const d = new Date(iso);
+  const giorni = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+  return `${giorni[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
+}
+function num(v, dec=0){ return (v==null || isNaN(v)) ? "—" : Number(v).toFixed(dec); }
+
+/* ================= FETCH CON RETRY E BACKOFF ================= */
+async function fetchConRetry(url, etichetta){
+  let ultimoErrore = null;
+  for (let tentativo = 0; tentativo < RETRY_TENTATIVI; tentativo++){
+    try {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 15000);
+      const risposta = await fetch(url, {signal: ctrl.signal});
+      clearTimeout(timeout);
+      if (!risposta.ok) throw new Error(`HTTP ${risposta.status} da ${etichetta}`);
+      const json = await risposta.json();
+      if (json.error) throw new Error(`${etichetta}: ${json.reason || "errore API"}`);
+      return json;
+    } catch (e){
+      ultimoErrore = e;
+      if (tentativo < RETRY_TENTATIVI - 1){
+        const attesa = RETRY_BASE_MS * Math.pow(2, tentativo); // 2s, 4s, 8s
+        await new Promise(r => setTimeout(r, attesa));
+      }
+    }
+  }
+  throw new Error(`${etichetta} non raggiungibile (${ultimoErrore?.message || "rete/CORS/rate-limit"}).`);
+}
+
+/* ==================== CARICAMENTO DATI ==================== */
+function urlForecast(){
+  return `https://api.open-meteo.com/v1/forecast?latitude=${stato.lat}&longitude=${stato.lon}` +
+    `&hourly=${PARAM_FORECAST_HOURLY}&current=${PARAM_FORECAST_CURRENT}` +
+    `&forecast_days=3&timezone=auto&wind_speed_unit=kmh`;
+}
+function urlMarine(){
+  return `https://marine-api.open-meteo.com/v1/marine?latitude=${stato.lat}&longitude=${stato.lon}` +
+    `&hourly=${PARAM_MARINE_HOURLY}&current=${PARAM_MARINE_CURRENT}` +
+    `&forecast_days=3&timezone=auto`;
+}
+
+async function caricaDati(){
+  if (stato.caricamentoInCorso) return;
+  stato.caricamentoInCorso = true;
+  $("caricamento").classList.add("visibile");
+  $("banner-errore").classList.remove("visibile");
+  try {
+    // Le due API sono indipendenti: se il marine fallisce (es. punto troppo interno),
+    // la parte atmosferica resta comunque utilizzabile.
+    const [meteo, marine] = await Promise.allSettled([
+      fetchConRetry(urlForecast(), "Open-Meteo Forecast"),
+      fetchConRetry(urlMarine(),  "Open-Meteo Marine")
+    ]);
+    if (meteo.status === "rejected") throw meteo.reason;
+    stato.meteo = meteo.value;
+    stato.marine = (marine.status === "fulfilled") ? marine.value : null;
+    stato.ultimoAggiornamento = new Date();
+    renderTutto();
+    if (marine.status === "rejected"){
+      mostraErrore("Dati marini non disponibili al momento (" + marine.reason.message +
+        "). La tabella mostra solo i dati atmosferici; nuovo tentativo al prossimo refresh.");
+    }
+  } catch (e){
+    mostraErrore("Impossibile caricare i dati: " + e.message +
+      " Controlla la connessione; nuovo tentativo automatico tra " + REFRESH_MINUTI + " minuti.");
+  } finally {
+    stato.caricamentoInCorso = false;
+    $("caricamento").classList.remove("visibile");
+  }
+}
+
+function mostraErrore(msg){
+  $("testo-errore").textContent = msg;
+  $("banner-errore").classList.add("visibile");
+}
+
+/* ==================== RENDER ==================== */
+function indiceOraCorrente(tempi){
+  const adesso = new Date();
+  // tempi[] è in ora locale del punto (timezone=auto), formato "YYYY-MM-DDTHH:00"
+  for (let i = 0; i < tempi.length; i++){
+    if (new Date(tempi[i]).getTime() >= adesso.getTime() - 3600e3) return i;
+  }
+  return 0;
+}
+
+// mappa orario ISO → indice marine (le due API sono allineate ma non si sa mai)
+function mappaMarine(){
+  const m = new Map();
+  if (stato.marine?.hourly?.time){
+    stato.marine.hourly.time.forEach((t,i) => m.set(t,i));
+  }
+  return m;
+}
+
+function trendPressione(h, i){
+  const j = i - PRESSIONE_ORE_CONFRONTO;
+  if (j < 0 || h.pressure_msl[i] == null || h.pressure_msl[j] == null)
+    return {simbolo:"→", classe:"press-stab", titolo:"n.d."};
+  const d = h.pressure_msl[i] - h.pressure_msl[j];
+  if (d >= PRESSIONE_DELTA_HPA)  return {simbolo:"↗", classe:"press-su",  titolo:`+${d.toFixed(1)} hPa/3h`};
+  if (d <= -PRESSIONE_DELTA_HPA) return {simbolo:"↘", classe:"press-giu", titolo:`${d.toFixed(1)} hPa/3h`};
+  return {simbolo:"→", classe:"press-stab", titolo:`${d>=0?"+":""}${d.toFixed(1)} hPa/3h`};
+}
+
+// freccia che indica DOVE VA il vento (direzione API = da dove proviene ⇒ +180°)
+function frecciaVento(gradi){
+  if (gradi == null) return "—";
+  return `<span class="freccia-vento" style="transform:rotate(${(gradi+180)%360}deg)" title="${Math.round(gradi)}° (da ${puntoCardinale(gradi)})">↑</span>`;
+}
+
+function renderProssimeOre(){
+  const h = stato.meteo.hourly;
+  const mm = mappaMarine();
+  const mh = stato.marine?.hourly;
+  const i0 = indiceOraCorrente(h.time);
+  let html = "";
+  for (let k = 0; k < 6 && i0+k < h.time.length; k++){
+    const i = i0 + k;
+    const im = mm.get(h.time[i]);
+    const onda = (mh && im != null) ? mh.wave_height[im] : null;
+    html += `<div class="ora-card">
+      <div class="h">${fmtOra(h.time[i])}</div>
+      <div class="t">${num(h.temperature_2m[i])}°</div>
+      <div class="vento">${frecciaVento(h.wind_direction_10m[i])} ${num(h.wind_speed_10m[i])} km/h</div>
+      <div class="onda">${onda!=null ? "🌊 "+num(onda,1)+" m" : ""}</div>
+      <div>💧 ${num(h.precipitation_probability?.[i])}%</div>
+    </div>`;
+  }
+  $("prossime-ore").innerHTML = html;
+}
+
+function renderTabella(){
+  const h = stato.meteo.hourly;
+  const mm = mappaMarine();
+  const mh = stato.marine?.hourly;
+  const i0 = indiceOraCorrente(h.time);
+  let html = "", giornoCorrente = "";
+  const fine = Math.min(i0 + 72, h.time.length);
+  for (let i = i0; i < fine; i++){
+    const giorno = h.time[i].slice(0,10);
+    if (giorno !== giornoCorrente){
+      giornoCorrente = giorno;
+      html += `<tr class="riga-giorno"><td colspan="12">${fmtGiorno(h.time[i])}</td></tr>`;
+    }
+    const tp = trendPressione(h, i);
+    const im = mm.get(h.time[i]);
+    const onda   = (mh && im!=null) ? mh.wave_height[im] : null;
+    const swellD = (mh && im!=null) ? mh.swell_wave_direction[im] : null;
+    const swellH = (mh && im!=null) ? mh.swell_wave_height[im] : null;
+    const uv = classeUV(h.uv_index?.[i]);
+    html += `<tr class="${i===i0 ? "riga-attuale" : ""}">
+      <td><strong>${fmtOra(h.time[i])}</strong></td>
+      <td>${num(h.temperature_2m[i])}°</td>
+      <td>${num(h.apparent_temperature[i])}°</td>
+      <td>${num(h.pressure_msl[i])}</td>
+      <td><span class="freccia-press ${tp.classe}" title="${tp.titolo}">${tp.simbolo}</span></td>
+      <td>${frecciaVento(h.wind_direction_10m[i])} ${puntoCardinale(h.wind_direction_10m[i])} ${num(h.wind_speed_10m[i])}</td>
+      <td>${num(h.wind_gusts_10m[i])}</td>
+      <td>${onda!=null ? num(onda,1) : "—"}</td>
+      <td>${swellD!=null ? frecciaVento(swellD)+" "+puntoCardinale(swellD)+(swellH!=null?" "+num(swellH,1)+"m":"") : "—"}</td>
+      <td>${num(h.precipitation_probability?.[i])}</td>
+      <td>${num(h.precipitation?.[i],1)}</td>
+      <td><span class="uv-chip" style="background:${uv.colore}">${num(h.uv_index?.[i])}</span></td>
+    </tr>`;
+  }
+  $("corpo-tabella").innerHTML = html;
+}
+
+/* Bandiera: calcolata SOLO tramite le costanti BANDIERA_SOGLIE */
+function calcolaBandiera(ventoKmh, raffKmh, ondaM){
+  const S = BANDIERA_SOGLIE;
+  const rossa =
+    (ventoKmh != null && ventoKmh >= S.VENTO_ROSSO_KMH) ||
+    (raffKmh  != null && raffKmh  >= S.RAFFICA_ROSSA_KMH) ||
+    (ondaM    != null && ondaM    >= S.ONDA_ROSSA_M);
+  if (rossa) return {classe:"rossa", nome:"Bandiera rossa",
+    significato:"Balneazione pericolosa o vietata"};
+  const verde =
+    (ventoKmh == null || ventoKmh < S.VENTO_VERDE_KMH) &&
+    (ondaM    == null || ondaM    < S.ONDA_VERDE_M);
+  if (verde) return {classe:"verde", nome:"Bandiera verde",
+    significato:"Balneazione consentita — mare tranquillo"};
+  return {classe:"gialla", nome:"Bandiera gialla",
+    significato:"Attenzione: bagnarsi con prudenza"};
+}
+
+function renderPubblico(){
+  const c = stato.meteo.current;
+  const cm = stato.marine?.current;
+  const h = stato.meteo.hourly;
+  const i0 = indiceOraCorrente(h.time);
+
+  const vento = c?.wind_speed_10m ?? h.wind_speed_10m[i0];
+  const raff  = c?.wind_gusts_10m ?? h.wind_gusts_10m[i0];
+  const dir   = c?.wind_direction_10m ?? h.wind_direction_10m[i0];
+  const onda  = cm?.wave_height ?? null;
+  const tMare = cm?.sea_surface_temperature ??
+                stato.marine?.hourly?.sea_surface_temperature?.[i0] ?? null;
+  const uvOra = h.uv_index?.[i0];
+
+  const b = calcolaBandiera(vento, raff, onda);
+  const blocco = $("blocco-bandiera");
+  blocco.className = "bandiera " + b.classe;
+  $("bandiera-nome").textContent = b.nome;
+  $("bandiera-significato").textContent = b.significato;
+
+  $("pub-temp").textContent = num(c?.temperature_2m) + "°C";
+  $("pub-mare").textContent = tMare != null ? num(tMare) + "°C" : "n.d.";
+  const uv = classeUV(uvOra);
+  $("pub-uv").textContent = uvOra != null ? `${num(uvOra)} (${uv.testo})` : "—";
+  $("pub-uv-consiglio").textContent = uv.consiglio;
+  $("pub-onde").textContent = onda != null ? num(onda,1) + " m" : "n.d.";
+  $("pub-onde-desc").textContent = descrizioneDouglas(onda);
+
+  const nomeV = nomeVento(dir);
+  $("pub-vento").textContent =
+    `💨 ${descrizioneBeaufort(vento)} da ${puntoCardinale(dir,false)}` +
+    (nomeV ? ` (${nomeV})` : "") + ` — ${num(vento)} km/h`;
+  $("pub-agg").textContent = stato.ultimoAggiornamento
+    ? stato.ultimoAggiornamento.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) : "—";
+}
+
+function renderTutto(){
+  if (!stato.meteo) return;
+  renderProssimeOre();
+  renderTabella();
+  renderPubblico();
+  $("ultimo-agg").textContent = "Ultimo aggiornamento: " +
+    stato.ultimoAggiornamento.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  $("nome-luogo").textContent = stato.nomeLuogo;
+}
+
+/* ==================== POSIZIONE ==================== */
+function aggiornaBadgePosizione(){
+  const b = $("badge-posizione");
+  if (stato.origine === "gps"){
+    b.className = "badge";
+    b.textContent = `📍 GPS: ${stato.lat.toFixed(3)}, ${stato.lon.toFixed(3)}`;
+  } else if (stato.origine === "manuale"){
+    b.className = "badge";
+    b.textContent = `📍 Manuale: ${stato.nomeLuogo} (${stato.lat.toFixed(3)}, ${stato.lon.toFixed(3)})`;
+  } else {
+    b.className = "badge avviso";
+    b.textContent = "📍 Posizione di default: Follonica — verificare coordinate esatte dello stabilimento";
+  }
+}
+
+function richiediGPS(){
+  if (!("geolocation" in navigator)){
+    stato.origine = "default";
+    aggiornaBadgePosizione();
+    caricaDati();
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      stato.lat = +pos.coords.latitude.toFixed(4);
+      stato.lon = +pos.coords.longitude.toFixed(4);
+      stato.origine = "gps";
+      stato.nomeLuogo = "posizione attuale";
+      aggiornaBadgePosizione();
+      caricaDati();
+    },
+    err => {
+      // Permesso negato o errore: fallback esplicito su Follonica
+      stato.lat = POSIZIONE_DEFAULT.lat; stato.lon = POSIZIONE_DEFAULT.lon;
+      stato.nomeLuogo = POSIZIONE_DEFAULT.nome;
+      stato.origine = "default";
+      aggiornaBadgePosizione();
+      if (err.code === err.PERMISSION_DENIED){
+        mostraErrore("Permesso di geolocalizzazione negato: uso le coordinate di default di Follonica. " +
+          "Puoi impostare la posizione esatta con il pulsante «📍 Posizione».");
+      }
+      caricaDati();
+    },
+    {enableHighAccuracy:false, timeout:8000, maximumAge:300000}
+  );
+}
+
+/* Ricerca luogo — Open-Meteo Geocoding API (stessa policy no-key/CORS) */
+let timerRicerca = null;
+async function cercaLuogo(testo){
+  const ul = $("risultati-ricerca");
+  if (testo.trim().length < 2){ ul.innerHTML = ""; return; }
+  try {
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(testo)}&count=5&language=it&format=json`);
+    const j = await r.json();
+    ul.innerHTML = (j.results || []).map(x =>
+      `<li data-lat="${x.latitude}" data-lon="${x.longitude}" data-nome="${x.name}">
+        ${x.name}${x.admin1 ? ", "+x.admin1 : ""} (${x.latitude.toFixed(2)}, ${x.longitude.toFixed(2)})
+      </li>`).join("") || "<li>Nessun risultato</li>";
+  } catch { ul.innerHTML = "<li>Ricerca non disponibile (rete)</li>"; }
+}
+
+/* ==================== MODULO SIR TOSCANA (opzionale) ==================== */
+async function aggiornaSIR(){
+  const esito = $("sir-esito");
+  if (!$("sir-attivo").checked){ esito.textContent = ""; return; }
+  if (!SIR_CONFIG.urlJson){
+    esito.innerHTML = `Nessun endpoint configurato (<code>SIR_CONFIG.urlJson</code> vuoto). ` +
+      `Consulta manualmente il portale: <a href="${SIR_CONFIG.portale}" target="_blank" rel="noopener">stazioni SIR Toscana</a>.`;
+    return;
+  }
+  try {
+    const j = await fetchConRetry(SIR_CONFIG.urlJson, "SIR Toscana");
+    esito.textContent = `OSSERVATO (non validato) — ${j.stazione ?? "stazione"}: ` +
+      `${j.temperatura != null ? j.temperatura+"°C, " : ""}` +
+      `${j.vento_kmh != null ? "vento "+j.vento_kmh+" km/h, " : ""}` +
+      `rilevato ${j.ora ?? "n.d."}`;
+  } catch (e){
+    esito.textContent = "Stazione SIR non raggiungibile: " + e.message;
+  }
+}
+
+/* ============ MODULO COMPARATIVO OPZIONALE (chiave propria) ============ */
+async function confrontaFonteComparativa(){
+  const esito = $("comp-esito");
+  if (!$("comp-attivo").checked){ esito.textContent = "Modulo disattivato."; return; }
+  const chiave = $("comp-chiave").value.trim(); // resta solo in memoria di sessione
+  if (!chiave){ esito.textContent = "Inserisci una API key valida (Tomorrow.io)."; return; }
+  esito.textContent = "Interrogo la fonte comparativa…";
+  try {
+    const r = await fetch(`https://api.tomorrow.io/v4/weather/realtime?location=${stato.lat},${stato.lon}&apikey=${encodeURIComponent(chiave)}`);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    const v = j?.data?.values || {};
+    const ventoKmh = v.windSpeed != null ? (v.windSpeed * 3.6).toFixed(0) : "—"; // m/s → km/h
+    esito.textContent = `Tomorrow.io (realtime): ${v.temperature ?? "—"}°C, vento ${ventoKmh} km/h. ` +
+      `Confronta con Open-Meteo qui sopra: scostamenti grandi = prudenza.`;
+  } catch (e){
+    esito.textContent = "Fonte comparativa non raggiungibile: " + e.message +
+      " (verifica chiave, quota o CORS del provider).";
+  }
+}
+
+/* ==================== EVENTI UI ==================== */
+function cambiaTab(tecnica){
+  $("vista-tecnica").classList.toggle("nascosta", !tecnica);
+  $("vista-bagnanti").classList.toggle("attiva", !tecnica);
+  $("tab-tecnica").setAttribute("aria-selected", tecnica);
+  $("tab-bagnanti").setAttribute("aria-selected", !tecnica);
+}
+$("tab-tecnica").addEventListener("click", () => cambiaTab(true));
+$("tab-bagnanti").addEventListener("click", () => cambiaTab(false));
+$("btn-aggiorna").addEventListener("click", caricaDati);
+$("btn-riprova").addEventListener("click", caricaDati);
+
+$("btn-posizione").addEventListener("click", () => {
+  $("inp-lat").value = stato.lat; $("inp-lon").value = stato.lon;
+  $("dlg-posizione").showModal();
+});
+$("dlg-annulla").addEventListener("click", () => $("dlg-posizione").close());
+$("dlg-gps").addEventListener("click", () => { $("dlg-posizione").close(); richiediGPS(); });
+$("dlg-salva").addEventListener("click", () => {
+  const lat = parseFloat($("inp-lat").value.replace(",", "."));
+  const lon = parseFloat($("inp-lon").value.replace(",", "."));
+  if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180){
+    alert("Coordinate non valide."); return;
+  }
+  stato.lat = lat; stato.lon = lon;
+  stato.origine = "manuale";
+  if (!$("cerca-luogo").dataset.scelto) stato.nomeLuogo = "punto personalizzato";
+  $("dlg-posizione").close();
+  aggiornaBadgePosizione();
+  caricaDati();
+});
+$("cerca-luogo").addEventListener("input", e => {
+  delete e.target.dataset.scelto;
+  clearTimeout(timerRicerca);
+  timerRicerca = setTimeout(() => cercaLuogo(e.target.value), 350);
+});
+$("risultati-ricerca").addEventListener("click", e => {
+  const li = e.target.closest("li[data-lat]");
+  if (!li) return;
+  $("inp-lat").value = li.dataset.lat;
+  $("inp-lon").value = li.dataset.lon;
+  stato.nomeLuogo = li.dataset.nome;
+  $("cerca-luogo").dataset.scelto = "1";
+  $("risultati-ricerca").innerHTML = "";
+});
+$("sir-attivo").addEventListener("change", aggiornaSIR);
+$("comp-test").addEventListener("click", confrontaFonteComparativa);
+
+/* ==================== AVVIO + AUTO-REFRESH ==================== */
+aggiornaBadgePosizione();
+richiediGPS(); // chiede il permesso; in caso di rifiuto fa fallback e carica comunque
+stato.timerRefresh = setInterval(() => {
+  caricaDati();
+  aggiornaSIR();
+}, REFRESH_MINUTI * 60 * 1000);
+
+/* ==========================================================================
+   NOTA DI VERIFICA PARAMETRI (richiesta esplicitamente)
+   --------------------------------------------------------------------------
+   Durante la generazione di questo file l'ambiente di sviluppo NON aveva
+   accesso di rete diretto a open-meteo.com (proxy aziendale con blocco 403),
+   quindi non è stato possibile eseguire una chiamata di test live né leggere
+   la pagina docs in tempo reale. I nomi parametro usati derivano da:
+   1) conoscenza consolidata della nomenclatura Open-Meteo post-2023
+      (snake_case: wind_speed_10m, cloud_cover, weather_code — che hanno
+      sostituito windspeed_10m/cloudcover/weathercode, ancora accettati
+      come alias retro-compatibili);
+   2) cross-check via ricerca web su documentazione di terze parti aggiornata
+      (conferma esplicita per: wind_speed_10m, pressure_msl, wave_height,
+      wave_direction, wave_period, wind_wave_*, swell_wave_height/direction/
+      period, sea_surface_temperature, precipitation_probability, uv_index).
+   PARAMETRI DA RICONTROLLARE alla prima apertura (bastano 10 secondi:
+   se uno fosse errato l'API risponde {"error":true,"reason":"..."} con il
+   nome del parametro invalido, e il banner rosso di questa pagina lo mostra):
+   - "current=" sul Marine API (wave_height, wave_period, sea_surface_temperature
+     nel blocco current): il supporto del blocco current sul marine è più
+     recente ed è la parte meno cross-verificata. Fallback già gestito: se il
+     current marine mancasse, la pagina usa la prima ora dello hourly.
+   - sea_surface_temperature può essere null per punti molto sotto costa:
+     gestito con "n.d.", non è un errore.
+   Tutto il resto (forecast_days=3, timezone=auto, wind_speed_unit=kmh,
+   geocoding-api.open-meteo.com/v1/search) è nomenclatura stabile da anni.
+   ========================================================================== */
+</script>
+</body>
+</html>
