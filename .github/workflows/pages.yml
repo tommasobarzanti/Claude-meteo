@@ -2,7 +2,7 @@ name: Pubblica su GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/follonica-marine-weather-dashboard-vnh6rr]
   workflow_dispatch:
 
 permissions:
