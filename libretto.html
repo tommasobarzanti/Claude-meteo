@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Libretto di: TOMMASO BARZANTI</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%96%3C/text%3E%3C/svg%3E">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --unifi-blu-scuro: #16395e;
+    --unifi-blu: #1e4b7d;
+    --unifi-blu-chiaro: #24578f;
+    --link: #2f6da8;
+    --testo: #333333;
+    --grigio-bordo: #cccccc;
+    --grigio-chiaro: #f5f5f5;
+    --verde: #43ac6a;
+    --giallo: #f0ad4e;
+  }
+
+  body {
+    font-family: "Open Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--testo);
+    background: #ffffff;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* ---------- Header UNIFI ---------- */
+  .unifi-header {
+    background: linear-gradient(180deg, var(--unifi-blu-chiaro) 0%, var(--unifi-blu) 55%, var(--unifi-blu-scuro) 100%);
+    border-bottom: 6px solid var(--unifi-blu-scuro);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+  .brand svg { width: 62px; height: 62px; flex: none; }
+  .brand .sep { width: 1px; height: 58px; background: rgba(255,255,255,.85); }
+  .brand-text {
+    color: #ffffff;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 19px;
+    letter-spacing: 1px;
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+  .brand-text .grande { font-size: 26px; letter-spacing: 3px; }
+  .menu-btn {
+    background: none; border: none; cursor: pointer;
+    color: #ffffff; text-align: center;
+    font-size: 13px; letter-spacing: .5px;
+    font-family: inherit;
+  }
+  .menu-btn .barre { display: block; margin: 0 auto 4px; }
+  .menu-btn .barre span {
+    display: block; width: 34px; height: 5px; border-radius: 2px;
+    background: #ffffff; margin-bottom: 5px;
+  }
+  .menu-btn .barre span:last-child { margin-bottom: 0; }
+
+  /* ---------- Contenuto ---------- */
+  main { max-width: 900px; margin: 0 auto; padding: 26px 18px 40px; }
+
+  h1 {
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1.3;
+    color: #444444;
+    margin-bottom: 22px;
+    overflow-wrap: break-word;
+  }
+  h1 a { color: var(--link); }
+
+  a { color: var(--link); text-decoration: underline; }
+
+  p.descrizione { margin-bottom: 18px; line-height: 1.5; }
+
+  /* ---------- Ricerca ---------- */
+  .ricerca { display: flex; margin: 26px 0 22px; }
+  .ricerca input {
+    flex: 1; min-width: 0;
+    border: 1px solid var(--grigio-bordo);
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    padding: 12px 14px;
+    font-size: 17px;
+    color: #555;
+    font-family: inherit;
+  }
+  .ricerca input:focus { outline: 2px solid var(--unifi-blu-chiaro); outline-offset: -1px; }
+  .ricerca .btn-cerca, .ricerca .btn-freccia {
+    border: 1px solid var(--grigio-bordo);
+    width: 56px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .ricerca .btn-cerca { background: #3572b0; border-color: #3572b0; }
+  .ricerca .btn-freccia { background: #ffffff; border-left: none; border-radius: 0 4px 4px 0; }
+
+  /* ---------- Tabella libretto ---------- */
+  table.libretto {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #aaaaaa;
+    margin-bottom: 8px;
+  }
+  table.libretto th {
+    text-align: left;
+    background: #fafafa;
+    font-size: 19px;
+    padding: 16px 12px;
+    border-bottom: 1px solid #aaaaaa;
+  }
+  table.libretto th.col-stato { width: 88px; text-align: center; border-left: 1px dashed #999999; }
+  table.libretto td {
+    border-top: 1px dotted #999999;
+    padding: 13px 10px;
+    vertical-align: middle;
+  }
+  table.libretto td.cella-stato { border-left: 1px dashed #999999; text-align: center; }
+
+  .riga-att { display: flex; align-items: center; gap: 10px; }
+  .espandi {
+    flex: none; border: none; background: none; cursor: pointer; padding: 2px;
+    color: #8a8a8a; line-height: 0;
+  }
+  .nome-att {
+    flex: 1;
+    font-size: 17px;
+    line-height: 1.35;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .icona-lista { flex: none; line-height: 0; }
+
+  /* Dettaglio espanso (stile Esse3) */
+  tr.dettaglio > td { background: #f7f9fb; padding: 0; }
+  .dettaglio-int { padding: 10px 14px 14px 44px; }
+  .dettaglio-int dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 15px; }
+  .dettaglio-int dt { font-weight: 700; color: #555; }
+  .dettaglio-int dd { overflow-wrap: break-word; }
+  .badge-stato { font-weight: 700; }
+  .badge-stato.superata { color: #2e7d4f; }
+  .badge-stato.da-sostenere { color: #b07417; }
+
+  /* ---------- Legenda ---------- */
+  .legenda { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; font-size: 15px; margin: 14px 0 34px; }
+  .legenda .voce { display: flex; align-items: center; gap: 8px; }
+
+  /* ---------- Statistiche ---------- */
+  h2 {
+    font-weight: 400; font-size: 26px; color: #444444;
+    margin: 34px 0 16px; padding-top: 10px;
+  }
+  table.statistiche {
+    width: 100%; border-collapse: collapse; border: 1px solid #aaaaaa; margin-bottom: 14px;
+  }
+  table.statistiche td { border: 1px dotted #999999; padding: 12px 14px; }
+  table.statistiche td.etichetta { background: var(--grigio-chiaro); font-weight: 700; width: 62%; }
+  table.statistiche td.valore { font-size: 17px; }
+
+  .nota-piede {
+    margin-top: 40px; padding-top: 14px; border-top: 1px solid #dddddd;
+    font-size: 13px; color: #888888;
+  }
+
+  .nascosta { display: none !important; }
+
+  @media (max-width: 480px) {
+    .brand svg { width: 52px; height: 52px; }
+    .brand-text { font-size: 16px; }
+    .brand-text .grande { font-size: 22px; }
+    h1 { font-size: 26px; }
+    .dettaglio-int { padding-left: 16px; }
+    table.statistiche td.etichetta { width: 55%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="unifi-header">
+  <a class="brand" href="#" onclick="return false">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="none" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="32" cy="32" r="23" fill="none" stroke="#ffffff" stroke-width="1"/>
+      <circle cx="32" cy="22" r="5" fill="#ffffff"/>
+      <path d="M22 44 Q22 30 32 30 Q42 30 42 44 Z" fill="#ffffff"/>
+      <path d="M20 46 L44 46" stroke="#ffffff" stroke-width="2"/>
+    </svg>
+    <span class="sep"></span>
+    <span class="brand-text">Università<br>degli Studi<br><span class="grande">Firenze</span></span>
+  </a>
+  <button class="menu-btn" type="button" onclick="return false">
+    <span class="barre"><span></span><span></span><span></span></span>
+    MENU
+  </button>
+</header>
+
+<main>
+  <h1>Libretto di: TOMMASO BARZANTI - [MAT. <a href="#" onclick="return false">7076245</a>]</h1>
+
+  <p class="descrizione">Questa pagina visualizza le informazioni relative alle attività didattiche del tuo libretto.<br>
+  Eventuali esami sostenuti in precedenti tratti di carriera sono reperibili nell'autocertificazione &ldquo;Storico Iscrizione ed Esami Superati&rdquo; (raggiungibile da Menù -&gt; Segreteria -&gt; Certificati)</p>
+
+  <p class="descrizione">Per visualizzare le statistiche delle medie <a href="#statistiche">clicca qui</a>.</p>
+
+  <div class="ricerca">
+    <input type="text" id="campo-cerca" placeholder="Cerca" aria-label="Cerca attività didattica">
+    <button class="btn-cerca" type="button" aria-label="Cerca" onclick="document.getElementById('campo-cerca').focus()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="#ffffff" stroke-width="2.4"/><path d="M15.5 15.5 L21 21" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/></svg>
+    </button>
+    <button class="btn-freccia" type="button" aria-label="Opzioni di ricerca" onclick="return false">
+      <svg width="16" height="10" viewBox="0 0 16 10"><path d="M1 1 L8 9 L15 1" fill="none" stroke="#555555" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <table class="libretto">
+    <thead>
+      <tr>
+        <th>Attività Didattiche</th>
+        <th class="col-stato">Stato</th>
+      </tr>
+    </thead>
+    <tbody id="corpo-libretto"></tbody>
+  </table>
+
+  <div class="legenda">
+    <span class="voce"><svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Superata</span>
+    <span class="voce"><svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="#f0ad4e" stroke-width="4"/></svg> Da sostenere</span>
+  </div>
+
+  <h2 id="statistiche">Statistiche delle medie</h2>
+  <table class="statistiche">
+    <tbody id="corpo-statistiche"></tbody>
+  </table>
+  <p class="descrizione"><a href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false">Torna al libretto</a></p>
+
+  <p class="nota-piede">Replica personale non ufficiale del libretto online di studenti.unifi.it &mdash; dati inseriti manualmente. La media ponderata è calcolata sui CFU; la base di laurea è la media ponderata espressa in centodecimi (&times;&nbsp;110/30).</p>
+</main>
+
+<script>
+// ============================================================
+// DATI DEL LIBRETTO — modifica qui per aggiornare la pagina.
+// voto: null  => esame non ancora sostenuto
+// codice: i codici contrassegnati "(da verificare)" nel commento
+//         sono indicativi; quelli certi vengono dallo screenshot.
+// ============================================================
+const ESAMI = [
+  // ---- Terzo anno (da sostenere) ----
+  { codice: "B012106", nome: "FINANZA AZIENDALE",                       anno: 3, cfu: 9, voto: null, docenti: "Alessandro Giannozzi, Valentina Cioli", aula: "Aula 002" },
+  { codice: "B003847", nome: "DIRITTO COMMERCIALE",                     anno: 3, cfu: 9, voto: null, docenti: "Andrea Zorzi",            aula: "Aula 002" },
+  { codice: "B016392", nome: "INTRODUZIONE ALL'ECONOMETRIA",            anno: 3, cfu: 6, voto: null, docenti: "Alessandra Palandri",     aula: "—" },
+  { codice: "B006721", nome: "POLITICA ECONOMICA",                      anno: 3, cfu: 9, voto: null, docenti: "Alessandro Petretto",     aula: "—" },
+  { codice: "B006819", nome: "STATISTICA ECONOMICA",                    anno: 3, cfu: 6, voto: null, docenti: "Lucia Buzzicoli",         aula: "—" },
+  // ---- Esami superati ----
+  { codice: "B006872", nome: "STORIA ECONOMICA",                        anno: 2, cfu: 6, voto: 23, docenti: "Paola Pinelli",             aula: "D6/1.11" },
+  { codice: "B006870", nome: "STORIA DEL PENSIERO ECONOMICO",           anno: 3, cfu: 6, voto: 24, docenti: "Antonio Magliulo",          aula: "D6/0.06 – D5/0.02" },
+  { codice: "B006589", nome: "ECONOMIA INTERNAZIONALE",                 anno: 2, cfu: 9, voto: 20, docenti: "Federico Gabriele Etro",    aula: "D4/0.01 – D6/0.18" },
+  { codice: "B003404", nome: "MATEMATICA FINANZIARIA",                  anno: 2, cfu: 6, voto: 25, docenti: "Giacomo Scandolo",          aula: "D6/0.18" },
+  { codice: "B003895", nome: "SCIENZA DELLE FINANZE",                   anno: 2, cfu: 9, voto: 26, docenti: "Lisa Grazzini",             aula: "D6/0.18" },
+  { codice: "B015981", nome: "BANCA E MERCATI FINANZIARI",              anno: 2, cfu: 9, voto: 26, docenti: "Federica Ielasi",           aula: "D6/0.07" },
+  { codice: "B018993", nome: "CONTABILITÀ",                             anno: 2, cfu: 6, voto: 24, docenti: "Elena Gori",                aula: "D6/0.18" },
+  { codice: "B006037", nome: "MACROECONOMIA",                           anno: 2, cfu: 9, voto: 25, docenti: "Leonardo Bargigli",         aula: "D4/0.05" },
+  { codice: "B001296", nome: "ISTITUZIONI DI DIRITTO PRIVATO",          anno: 2, cfu: 9, voto: 25, docenti: "Felice Maurizio D'Ettore",  aula: "D5/0.03" },
+  { codice: "B001211", nome: "MICROECONOMIA",                           anno: 1, cfu: 9, voto: 24, docenti: "Tiziano Distefano",         aula: "D4/0.01" },
+  { codice: "B006817", nome: "STATISTICA",                              anno: 1, cfu: 9, voto: 25, docenti: "Carla Rampichini",          aula: "D4/0.01" },
+  { codice: "B018992", nome: "ECONOMIA E GESTIONE DELLE IMPRESE",       anno: 1, cfu: 9, voto: 23, docenti: "Francesco Ciampi",          aula: "D4/0.01" },
+  { codice: "B018994", nome: "MATEMATICA PER LE APPLICAZIONI ECONOMICHE", anno: 1, cfu: 9, voto: 25, docenti: "Domenico Menicucci",      aula: "D4/0.01" },
+  { codice: "B001297", nome: "ISTITUZIONI DI DIRITTO PUBBLICO",         anno: 1, cfu: 9, voto: 27, docenti: "Erik Longo",                aula: "D4/0.01" },
+  { codice: "B018991", nome: "ECONOMIA AZIENDALE",                      anno: 1, cfu: 9, voto: 30, docenti: "Marco Contri",              aula: "D4/0.01" },
+];
+
+// Come il portale, l'elenco è in ordine alfabetico.
+ESAMI.sort((a, b) => a.nome.localeCompare(b.nome, "it"));
+
+const ICONA_SUPERATA = '<svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICONA_DA_FARE  = '<svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Da sostenere"><circle cx="10" cy="10" r="7" fill="none" stroke="#f0ad4e" stroke-width="4"/></svg>';
+const ICONA_PIU      = '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
+const ICONA_MENO     = '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
+const ICONA_LISTA    = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function rigaEsame(esame, indice) {
+  const superata = esame.voto !== null;
+  return `
+    <tr class="riga-esame" data-indice="${indice}">
+      <td>
+        <div class="riga-att">
+          <button class="espandi" type="button" aria-expanded="false" aria-label="Espandi dettagli" onclick="toggleDettaglio(${indice})">${ICONA_PIU}</button>
+          <a class="nome-att" href="#" onclick="toggleDettaglio(${indice});return false">${esame.codice} - ${esame.nome}</a>
+          <span class="icona-lista">${ICONA_LISTA}</span>
+        </div>
+      </td>
+      <td class="cella-stato">${superata ? ICONA_SUPERATA : ICONA_DA_FARE}</td>
+    </tr>
+    <tr class="dettaglio nascosta" id="dettaglio-${indice}">
+      <td colspan="2">
+        <div class="dettaglio-int">
+          <dl>
+            <dt>Anno di Corso:</dt><dd>${esame.anno}°</dd>
+            <dt>Peso in CFU:</dt><dd>${esame.cfu}</dd>
+            <dt>Voto:</dt><dd>${superata ? esame.voto + "/30" : "esame non ancora sostenuto"}</dd>
+            <dt>Docenti:</dt><dd>${esame.docenti}</dd>
+            <dt>Aula esame:</dt><dd>${esame.aula}</dd>
+            <dt>Stato:</dt><dd class="badge-stato ${superata ? "superata" : "da-sostenere"}">${superata ? "Superata" : "Da sostenere"}</dd>
+          </dl>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function toggleDettaglio(indice) {
+  const det = document.getElementById("dettaglio-" + indice);
+  const btn = document.querySelector(`tr[data-indice="${indice}"] .espandi`);
+  const aperta = det.classList.toggle("nascosta");
+  btn.innerHTML = aperta ? ICONA_PIU : ICONA_MENO;
+  btn.setAttribute("aria-expanded", String(!aperta));
+}
+
+document.getElementById("corpo-libretto").innerHTML = ESAMI.map(rigaEsame).join("");
+
+// ---------- Ricerca ----------
+document.getElementById("campo-cerca").addEventListener("input", function () {
+  const q = this.value.trim().toLowerCase();
+  ESAMI.forEach((esame, i) => {
+    const visibile = !q || (esame.codice + " " + esame.nome + " " + esame.docenti).toLowerCase().includes(q);
+    document.querySelector(`tr[data-indice="${i}"]`).classList.toggle("nascosta", !visibile);
+    if (!visibile) {
+      document.getElementById("dettaglio-" + i).classList.add("nascosta");
+      const btn = document.querySelector(`tr[data-indice="${i}"] .espandi`);
+      btn.innerHTML = ICONA_PIU;
+      btn.setAttribute("aria-expanded", "false");
+    }
+  });
+});
+
+// ---------- Statistiche ----------
+const superati = ESAMI.filter(e => e.voto !== null);
+const cfuSuperati = superati.reduce((s, e) => s + e.cfu, 0);
+const cfuTotali = ESAMI.reduce((s, e) => s + e.cfu, 0);
+const mediaAritmetica = superati.reduce((s, e) => s + e.voto, 0) / superati.length;
+const mediaPonderata = superati.reduce((s, e) => s + e.voto * e.cfu, 0) / cfuSuperati;
+const baseLaurea = mediaPonderata * 110 / 30;
+const it = n => n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+document.getElementById("corpo-statistiche").innerHTML = `
+  <tr><td class="etichetta">Esami superati</td><td class="valore">${superati.length} su ${ESAMI.length}</td></tr>
+  <tr><td class="etichetta">CFU conseguiti (esami in elenco)</td><td class="valore">${cfuSuperati} su ${cfuTotali}</td></tr>
+  <tr><td class="etichetta">Media Aritmetica dei voti</td><td class="valore">${it(mediaAritmetica)}/30</td></tr>
+  <tr><td class="etichetta">Media Ponderata sui CFU</td><td class="valore">${it(mediaPonderata)}/30</td></tr>
+  <tr><td class="etichetta">Base di laurea (media ponderata in centodecimi)</td><td class="valore">${it(baseLaurea)}/110</td></tr>`;
+</script>
+
+</body>
+</html>
