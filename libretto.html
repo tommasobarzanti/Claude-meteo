@@ -16,8 +16,6 @@
     --testo: #333333;
     --grigio-bordo: #cccccc;
     --grigio-chiaro: #f5f5f5;
-    --verde: #43ac6a;
-    --giallo: #f0ad4e;
   }
 
   body {
@@ -124,22 +122,36 @@
   table.libretto td.cella-stato { border-left: 1px dashed #999999; text-align: center; }
 
   .riga-att { display: flex; align-items: center; gap: 10px; }
+  .esp-check { position: absolute; opacity: 0; pointer-events: none; }
   .espandi {
-    flex: none; border: none; background: none; cursor: pointer; padding: 2px;
+    flex: none; cursor: pointer; padding: 2px;
     color: #8a8a8a; line-height: 0;
   }
+  .espandi .icona-meno { display: none; }
   .nome-att {
     flex: 1;
     font-size: 17px;
     line-height: 1.35;
     text-transform: uppercase;
     cursor: pointer;
+    color: var(--link);
+    text-decoration: underline;
   }
   .icona-lista { flex: none; line-height: 0; }
 
-  /* Dettaglio espanso (stile Esse3) */
-  tr.dettaglio > td { background: #f7f9fb; padding: 0; }
-  .dettaglio-int { padding: 10px 14px 14px 44px; }
+  /* Dettaglio espanso: visibile quando la casella è selezionata.
+     Funziona senza JavaScript grazie a :has(); il piccolo script in
+     fondo aggiunge la classe .aperta come riserva per browser datati. */
+  tr.dettaglio { display: none; }
+  tr.riga-esame:has(.esp-check:checked) + tr.dettaglio,
+  tbody.gruppo-esame.aperta tr.dettaglio { display: table-row; }
+  tr.riga-esame:has(.esp-check:checked) .icona-piu,
+  tbody.gruppo-esame.aperta .icona-piu { display: none; }
+  tr.riga-esame:has(.esp-check:checked) .icona-meno,
+  tbody.gruppo-esame.aperta .icona-meno { display: inline; }
+
+  tr.dettaglio > td { background: #f7f9fb; }
+  .dettaglio-int { padding: 2px 14px 6px 34px; }
   .dettaglio-int dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 15px; }
   .dettaglio-int dt { font-weight: 700; color: #555; }
   .dettaglio-int dd { overflow-wrap: break-word; }
@@ -183,7 +195,7 @@
 <body>
 
 <header class="unifi-header">
-  <a class="brand" href="#" onclick="return false">
+  <span class="brand">
     <svg viewBox="0 0 64 64" aria-hidden="true">
       <circle cx="32" cy="32" r="30" fill="none" stroke="#ffffff" stroke-width="2"/>
       <circle cx="32" cy="32" r="23" fill="none" stroke="#ffffff" stroke-width="1"/>
@@ -193,15 +205,15 @@
     </svg>
     <span class="sep"></span>
     <span class="brand-text">Università<br>degli Studi<br><span class="grande">Firenze</span></span>
-  </a>
-  <button class="menu-btn" type="button" onclick="return false">
+  </span>
+  <span class="menu-btn">
     <span class="barre"><span></span><span></span><span></span></span>
     MENU
-  </button>
+  </span>
 </header>
 
 <main>
-  <h1>Libretto di: TOMMASO BARZANTI - [MAT. <a href="#" onclick="return false">7076245</a>]</h1>
+  <h1>Libretto di: TOMMASO BARZANTI - [MAT. <a href="#statistiche">7076245</a>]</h1>
 
   <p class="descrizione">Questa pagina visualizza le informazioni relative alle attività didattiche del tuo libretto.<br>
   Eventuali esami sostenuti in precedenti tratti di carriera sono reperibili nell'autocertificazione &ldquo;Storico Iscrizione ed Esami Superati&rdquo; (raggiungibile da Menù -&gt; Segreteria -&gt; Certificati)</p>
@@ -210,12 +222,12 @@
 
   <div class="ricerca">
     <input type="text" id="campo-cerca" placeholder="Cerca" aria-label="Cerca attività didattica">
-    <button class="btn-cerca" type="button" aria-label="Cerca" onclick="document.getElementById('campo-cerca').focus()">
+    <span class="btn-cerca" aria-hidden="true">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="#ffffff" stroke-width="2.4"/><path d="M15.5 15.5 L21 21" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/></svg>
-    </button>
-    <button class="btn-freccia" type="button" aria-label="Opzioni di ricerca" onclick="return false">
+    </span>
+    <span class="btn-freccia" aria-hidden="true">
       <svg width="16" height="10" viewBox="0 0 16 10"><path d="M1 1 L8 9 L15 1" fill="none" stroke="#555555" stroke-width="2.4" stroke-linecap="round"/></svg>
-    </button>
+    </span>
   </div>
 
   <table class="libretto">
@@ -225,7 +237,546 @@
         <th class="col-stato">Stato</th>
       </tr>
     </thead>
-    <tbody id="corpo-libretto"></tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-0" class="esp-check" aria-label="Mostra dettagli di BANCA E MERCATI FINANZIARI">
+            <label for="esp-0" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-0" class="nome-att">B015981 - BANCA E MERCATI FINANZIARI</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>2°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>26/30</dd>
+              <dt>Docenti:</dt><dd>Federica Ielasi</dd>
+              <dt>Aula esame:</dt><dd>D6/0.07</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-1" class="esp-check" aria-label="Mostra dettagli di CONTABILITÀ">
+            <label for="esp-1" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-1" class="nome-att">B018993 - CONTABILITÀ</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>2°</dd>
+              <dt>Peso in CFU:</dt><dd>6</dd>
+              <dt>Voto:</dt><dd>24/30</dd>
+              <dt>Docenti:</dt><dd>Elena Gori</dd>
+              <dt>Aula esame:</dt><dd>D6/0.18</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-2" class="esp-check" aria-label="Mostra dettagli di DIRITTO COMMERCIALE">
+            <label for="esp-2" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-2" class="nome-att">B003847 - DIRITTO COMMERCIALE</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Da sostenere"><circle cx="10" cy="10" r="7" fill="none" stroke="#f0ad4e" stroke-width="4"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>3°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>esame non ancora sostenuto</dd>
+              <dt>Docenti:</dt><dd>Andrea Zorzi</dd>
+              <dt>Aula esame:</dt><dd>Aula 002</dd>
+              <dt>Stato:</dt><dd class="badge-stato da-sostenere">Da sostenere</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-3" class="esp-check" aria-label="Mostra dettagli di ECONOMIA AZIENDALE">
+            <label for="esp-3" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-3" class="nome-att">B018991 - ECONOMIA AZIENDALE</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>1°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>30/30</dd>
+              <dt>Docenti:</dt><dd>Marco Contri</dd>
+              <dt>Aula esame:</dt><dd>D4/0.01</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-4" class="esp-check" aria-label="Mostra dettagli di ECONOMIA E GESTIONE DELLE IMPRESE">
+            <label for="esp-4" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-4" class="nome-att">B018992 - ECONOMIA E GESTIONE DELLE IMPRESE</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>1°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>23/30</dd>
+              <dt>Docenti:</dt><dd>Francesco Ciampi</dd>
+              <dt>Aula esame:</dt><dd>D4/0.01</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-5" class="esp-check" aria-label="Mostra dettagli di ECONOMIA INTERNAZIONALE">
+            <label for="esp-5" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-5" class="nome-att">B006589 - ECONOMIA INTERNAZIONALE</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>2°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>20/30</dd>
+              <dt>Docenti:</dt><dd>Federico Gabriele Etro</dd>
+              <dt>Aula esame:</dt><dd>D4/0.01 – D6/0.18</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-6" class="esp-check" aria-label="Mostra dettagli di FINANZA AZIENDALE">
+            <label for="esp-6" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-6" class="nome-att">B012106 - FINANZA AZIENDALE</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Da sostenere"><circle cx="10" cy="10" r="7" fill="none" stroke="#f0ad4e" stroke-width="4"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>3°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>esame non ancora sostenuto</dd>
+              <dt>Docenti:</dt><dd>Alessandro Giannozzi, Valentina Cioli</dd>
+              <dt>Aula esame:</dt><dd>Aula 002</dd>
+              <dt>Stato:</dt><dd class="badge-stato da-sostenere">Da sostenere</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-7" class="esp-check" aria-label="Mostra dettagli di INTRODUZIONE ALL'ECONOMETRIA">
+            <label for="esp-7" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-7" class="nome-att">B016392 - INTRODUZIONE ALL'ECONOMETRIA</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Da sostenere"><circle cx="10" cy="10" r="7" fill="none" stroke="#f0ad4e" stroke-width="4"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>3°</dd>
+              <dt>Peso in CFU:</dt><dd>6</dd>
+              <dt>Voto:</dt><dd>esame non ancora sostenuto</dd>
+              <dt>Docenti:</dt><dd>Alessandra Palandri</dd>
+              <dt>Aula esame:</dt><dd>—</dd>
+              <dt>Stato:</dt><dd class="badge-stato da-sostenere">Da sostenere</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-8" class="esp-check" aria-label="Mostra dettagli di ISTITUZIONI DI DIRITTO PRIVATO">
+            <label for="esp-8" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-8" class="nome-att">B001296 - ISTITUZIONI DI DIRITTO PRIVATO</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>2°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>25/30</dd>
+              <dt>Docenti:</dt><dd>Felice Maurizio D'Ettore</dd>
+              <dt>Aula esame:</dt><dd>D5/0.03</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-9" class="esp-check" aria-label="Mostra dettagli di ISTITUZIONI DI DIRITTO PUBBLICO">
+            <label for="esp-9" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-9" class="nome-att">B001297 - ISTITUZIONI DI DIRITTO PUBBLICO</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>1°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>27/30</dd>
+              <dt>Docenti:</dt><dd>Erik Longo</dd>
+              <dt>Aula esame:</dt><dd>D4/0.01</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-10" class="esp-check" aria-label="Mostra dettagli di MACROECONOMIA">
+            <label for="esp-10" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-10" class="nome-att">B006037 - MACROECONOMIA</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>2°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>25/30</dd>
+              <dt>Docenti:</dt><dd>Leonardo Bargigli</dd>
+              <dt>Aula esame:</dt><dd>D4/0.05</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-11" class="esp-check" aria-label="Mostra dettagli di MATEMATICA FINANZIARIA">
+            <label for="esp-11" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-11" class="nome-att">B003404 - MATEMATICA FINANZIARIA</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>2°</dd>
+              <dt>Peso in CFU:</dt><dd>6</dd>
+              <dt>Voto:</dt><dd>25/30</dd>
+              <dt>Docenti:</dt><dd>Giacomo Scandolo</dd>
+              <dt>Aula esame:</dt><dd>D6/0.18</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-12" class="esp-check" aria-label="Mostra dettagli di MATEMATICA PER LE APPLICAZIONI ECONOMICHE">
+            <label for="esp-12" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-12" class="nome-att">B018994 - MATEMATICA PER LE APPLICAZIONI ECONOMICHE</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>1°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>25/30</dd>
+              <dt>Docenti:</dt><dd>Domenico Menicucci</dd>
+              <dt>Aula esame:</dt><dd>D4/0.01</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-13" class="esp-check" aria-label="Mostra dettagli di MICROECONOMIA">
+            <label for="esp-13" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-13" class="nome-att">B001211 - MICROECONOMIA</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>1°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>24/30</dd>
+              <dt>Docenti:</dt><dd>Tiziano Distefano</dd>
+              <dt>Aula esame:</dt><dd>D4/0.01</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-14" class="esp-check" aria-label="Mostra dettagli di POLITICA ECONOMICA">
+            <label for="esp-14" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-14" class="nome-att">B006721 - POLITICA ECONOMICA</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Da sostenere"><circle cx="10" cy="10" r="7" fill="none" stroke="#f0ad4e" stroke-width="4"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>3°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>esame non ancora sostenuto</dd>
+              <dt>Docenti:</dt><dd>Alessandro Petretto</dd>
+              <dt>Aula esame:</dt><dd>—</dd>
+              <dt>Stato:</dt><dd class="badge-stato da-sostenere">Da sostenere</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-15" class="esp-check" aria-label="Mostra dettagli di SCIENZA DELLE FINANZE">
+            <label for="esp-15" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-15" class="nome-att">B003895 - SCIENZA DELLE FINANZE</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>2°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>26/30</dd>
+              <dt>Docenti:</dt><dd>Lisa Grazzini</dd>
+              <dt>Aula esame:</dt><dd>D6/0.18</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-16" class="esp-check" aria-label="Mostra dettagli di STATISTICA">
+            <label for="esp-16" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-16" class="nome-att">B006817 - STATISTICA</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>1°</dd>
+              <dt>Peso in CFU:</dt><dd>9</dd>
+              <dt>Voto:</dt><dd>25/30</dd>
+              <dt>Docenti:</dt><dd>Carla Rampichini</dd>
+              <dt>Aula esame:</dt><dd>D4/0.01</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-17" class="esp-check" aria-label="Mostra dettagli di STATISTICA ECONOMICA">
+            <label for="esp-17" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-17" class="nome-att">B006819 - STATISTICA ECONOMICA</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Da sostenere"><circle cx="10" cy="10" r="7" fill="none" stroke="#f0ad4e" stroke-width="4"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>3°</dd>
+              <dt>Peso in CFU:</dt><dd>6</dd>
+              <dt>Voto:</dt><dd>esame non ancora sostenuto</dd>
+              <dt>Docenti:</dt><dd>Lucia Buzzicoli</dd>
+              <dt>Aula esame:</dt><dd>—</dd>
+              <dt>Stato:</dt><dd class="badge-stato da-sostenere">Da sostenere</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-18" class="esp-check" aria-label="Mostra dettagli di STORIA DEL PENSIERO ECONOMICO">
+            <label for="esp-18" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-18" class="nome-att">B006870 - STORIA DEL PENSIERO ECONOMICO</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>3°</dd>
+              <dt>Peso in CFU:</dt><dd>6</dd>
+              <dt>Voto:</dt><dd>24/30</dd>
+              <dt>Docenti:</dt><dd>Antonio Magliulo</dd>
+              <dt>Aula esame:</dt><dd>D6/0.06 – D5/0.02</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+    <tbody class="gruppo-esame">
+      <tr class="riga-esame">
+        <td>
+          <div class="riga-att">
+            <input type="checkbox" id="esp-19" class="esp-check" aria-label="Mostra dettagli di STORIA ECONOMICA">
+            <label for="esp-19" class="espandi"><svg class="icona-piu" width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><svg class="icona-meno" width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></label>
+            <label for="esp-19" class="nome-att">B006872 - STORIA ECONOMICA</label>
+            <span class="icona-lista"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+        </td>
+        <td class="cella-stato"><svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></td>
+      </tr>
+      <tr class="dettaglio">
+        <td colspan="2">
+          <div class="dettaglio-int">
+            <dl>
+              <dt>Anno di Corso:</dt><dd>2°</dd>
+              <dt>Peso in CFU:</dt><dd>6</dd>
+              <dt>Voto:</dt><dd>23/30</dd>
+              <dt>Docenti:</dt><dd>Paola Pinelli</dd>
+              <dt>Aula esame:</dt><dd>D6/1.11</dd>
+              <dt>Stato:</dt><dd class="badge-stato superata">Superata</dd>
+            </dl>
+          </div>
+        </td>
+      </tr>
+    </tbody>
   </table>
 
   <div class="legenda">
@@ -235,123 +786,36 @@
 
   <h2 id="statistiche">Statistiche delle medie</h2>
   <table class="statistiche">
-    <tbody id="corpo-statistiche"></tbody>
+    <tbody>
+      <tr><td class="etichetta">Esami superati</td><td class="valore">15 su 20</td></tr>
+      <tr><td class="etichetta">CFU conseguiti (esami in elenco)</td><td class="valore">123 su 162</td></tr>
+      <tr><td class="etichetta">Media Aritmetica dei voti</td><td class="valore">24,80/30</td></tr>
+      <tr><td class="etichetta">Media Ponderata sui CFU</td><td class="valore">24,88/30</td></tr>
+      <tr><td class="etichetta">Base di laurea (media ponderata in centodecimi)</td><td class="valore">91,22/110</td></tr>
+    </tbody>
   </table>
-  <p class="descrizione"><a href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false">Torna al libretto</a></p>
+  <p class="descrizione"><a href="#">Torna al libretto</a></p>
 
   <p class="nota-piede">Replica personale non ufficiale del libretto online di studenti.unifi.it &mdash; dati inseriti manualmente. La media ponderata è calcolata sui CFU; la base di laurea è la media ponderata espressa in centodecimi (&times;&nbsp;110/30).</p>
 </main>
 
 <script>
-// ============================================================
-// DATI DEL LIBRETTO — modifica qui per aggiornare la pagina.
-// voto: null  => esame non ancora sostenuto
-// codice: i codici contrassegnati "(da verificare)" nel commento
-//         sono indicativi; quelli certi vengono dallo screenshot.
-// ============================================================
-const ESAMI = [
-  // ---- Terzo anno (da sostenere) ----
-  { codice: "B012106", nome: "FINANZA AZIENDALE",                       anno: 3, cfu: 9, voto: null, docenti: "Alessandro Giannozzi, Valentina Cioli", aula: "Aula 002" },
-  { codice: "B003847", nome: "DIRITTO COMMERCIALE",                     anno: 3, cfu: 9, voto: null, docenti: "Andrea Zorzi",            aula: "Aula 002" },
-  { codice: "B016392", nome: "INTRODUZIONE ALL'ECONOMETRIA",            anno: 3, cfu: 6, voto: null, docenti: "Alessandra Palandri",     aula: "—" },
-  { codice: "B006721", nome: "POLITICA ECONOMICA",                      anno: 3, cfu: 9, voto: null, docenti: "Alessandro Petretto",     aula: "—" },
-  { codice: "B006819", nome: "STATISTICA ECONOMICA",                    anno: 3, cfu: 6, voto: null, docenti: "Lucia Buzzicoli",         aula: "—" },
-  // ---- Esami superati ----
-  { codice: "B006872", nome: "STORIA ECONOMICA",                        anno: 2, cfu: 6, voto: 23, docenti: "Paola Pinelli",             aula: "D6/1.11" },
-  { codice: "B006870", nome: "STORIA DEL PENSIERO ECONOMICO",           anno: 3, cfu: 6, voto: 24, docenti: "Antonio Magliulo",          aula: "D6/0.06 – D5/0.02" },
-  { codice: "B006589", nome: "ECONOMIA INTERNAZIONALE",                 anno: 2, cfu: 9, voto: 20, docenti: "Federico Gabriele Etro",    aula: "D4/0.01 – D6/0.18" },
-  { codice: "B003404", nome: "MATEMATICA FINANZIARIA",                  anno: 2, cfu: 6, voto: 25, docenti: "Giacomo Scandolo",          aula: "D6/0.18" },
-  { codice: "B003895", nome: "SCIENZA DELLE FINANZE",                   anno: 2, cfu: 9, voto: 26, docenti: "Lisa Grazzini",             aula: "D6/0.18" },
-  { codice: "B015981", nome: "BANCA E MERCATI FINANZIARI",              anno: 2, cfu: 9, voto: 26, docenti: "Federica Ielasi",           aula: "D6/0.07" },
-  { codice: "B018993", nome: "CONTABILITÀ",                             anno: 2, cfu: 6, voto: 24, docenti: "Elena Gori",                aula: "D6/0.18" },
-  { codice: "B006037", nome: "MACROECONOMIA",                           anno: 2, cfu: 9, voto: 25, docenti: "Leonardo Bargigli",         aula: "D4/0.05" },
-  { codice: "B001296", nome: "ISTITUZIONI DI DIRITTO PRIVATO",          anno: 2, cfu: 9, voto: 25, docenti: "Felice Maurizio D'Ettore",  aula: "D5/0.03" },
-  { codice: "B001211", nome: "MICROECONOMIA",                           anno: 1, cfu: 9, voto: 24, docenti: "Tiziano Distefano",         aula: "D4/0.01" },
-  { codice: "B006817", nome: "STATISTICA",                              anno: 1, cfu: 9, voto: 25, docenti: "Carla Rampichini",          aula: "D4/0.01" },
-  { codice: "B018992", nome: "ECONOMIA E GESTIONE DELLE IMPRESE",       anno: 1, cfu: 9, voto: 23, docenti: "Francesco Ciampi",          aula: "D4/0.01" },
-  { codice: "B018994", nome: "MATEMATICA PER LE APPLICAZIONI ECONOMICHE", anno: 1, cfu: 9, voto: 25, docenti: "Domenico Menicucci",      aula: "D4/0.01" },
-  { codice: "B001297", nome: "ISTITUZIONI DI DIRITTO PUBBLICO",         anno: 1, cfu: 9, voto: 27, docenti: "Erik Longo",                aula: "D4/0.01" },
-  { codice: "B018991", nome: "ECONOMIA AZIENDALE",                      anno: 1, cfu: 9, voto: 30, docenti: "Marco Contri",              aula: "D4/0.01" },
-];
-
-// Come il portale, l'elenco è in ordine alfabetico.
-ESAMI.sort((a, b) => a.nome.localeCompare(b.nome, "it"));
-
-const ICONA_SUPERATA = '<svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Superata"><circle cx="10" cy="10" r="9" fill="#43ac6a"/><path d="M5.5 10.5 L8.7 13.7 L14.5 7" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const ICONA_DA_FARE  = '<svg width="26" height="26" viewBox="0 0 20 20" role="img" aria-label="Da sostenere"><circle cx="10" cy="10" r="7" fill="none" stroke="#f0ad4e" stroke-width="4"/></svg>';
-const ICONA_PIU      = '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 V16 M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
-const ICONA_MENO     = '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M2 9 H16" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>';
-const ICONA_LISTA    = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6 H14 M4 11 H12 M4 16 H9" stroke="#4a4a4a" stroke-width="2.2" stroke-linecap="round"/><circle cx="16.5" cy="16.5" r="5" fill="#4a4a4a"/><path d="M14.4 16.6 L16 18.2 L18.8 14.9" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-function rigaEsame(esame, indice) {
-  const superata = esame.voto !== null;
-  return `
-    <tr class="riga-esame" data-indice="${indice}">
-      <td>
-        <div class="riga-att">
-          <button class="espandi" type="button" aria-expanded="false" aria-label="Espandi dettagli" onclick="toggleDettaglio(${indice})">${ICONA_PIU}</button>
-          <a class="nome-att" href="#" onclick="toggleDettaglio(${indice});return false">${esame.codice} - ${esame.nome}</a>
-          <span class="icona-lista">${ICONA_LISTA}</span>
-        </div>
-      </td>
-      <td class="cella-stato">${superata ? ICONA_SUPERATA : ICONA_DA_FARE}</td>
-    </tr>
-    <tr class="dettaglio nascosta" id="dettaglio-${indice}">
-      <td colspan="2">
-        <div class="dettaglio-int">
-          <dl>
-            <dt>Anno di Corso:</dt><dd>${esame.anno}°</dd>
-            <dt>Peso in CFU:</dt><dd>${esame.cfu}</dd>
-            <dt>Voto:</dt><dd>${superata ? esame.voto + "/30" : "esame non ancora sostenuto"}</dd>
-            <dt>Docenti:</dt><dd>${esame.docenti}</dd>
-            <dt>Aula esame:</dt><dd>${esame.aula}</dd>
-            <dt>Stato:</dt><dd class="badge-stato ${superata ? "superata" : "da-sostenere"}">${superata ? "Superata" : "Da sostenere"}</dd>
-          </dl>
-        </div>
-      </td>
-    </tr>`;
-}
-
-function toggleDettaglio(indice) {
-  const det = document.getElementById("dettaglio-" + indice);
-  const btn = document.querySelector(`tr[data-indice="${indice}"] .espandi`);
-  const aperta = det.classList.toggle("nascosta");
-  btn.innerHTML = aperta ? ICONA_PIU : ICONA_MENO;
-  btn.setAttribute("aria-expanded", String(!aperta));
-}
-
-document.getElementById("corpo-libretto").innerHTML = ESAMI.map(rigaEsame).join("");
-
-// ---------- Ricerca ----------
-document.getElementById("campo-cerca").addEventListener("input", function () {
-  const q = this.value.trim().toLowerCase();
-  ESAMI.forEach((esame, i) => {
-    const visibile = !q || (esame.codice + " " + esame.nome + " " + esame.docenti).toLowerCase().includes(q);
-    document.querySelector(`tr[data-indice="${i}"]`).classList.toggle("nascosta", !visibile);
-    if (!visibile) {
-      document.getElementById("dettaglio-" + i).classList.add("nascosta");
-      const btn = document.querySelector(`tr[data-indice="${i}"] .espandi`);
-      btn.innerHTML = ICONA_PIU;
-      btn.setAttribute("aria-expanded", "false");
-    }
+// Miglioramenti facoltativi: la pagina funziona anche senza questo script.
+// 1) Riserva per browser senza :has() — apre/chiude il dettaglio con una classe.
+document.querySelectorAll(".esp-check").forEach(function (check) {
+  check.addEventListener("change", function () {
+    check.closest("tbody").classList.toggle("aperta", check.checked);
   });
 });
-
-// ---------- Statistiche ----------
-const superati = ESAMI.filter(e => e.voto !== null);
-const cfuSuperati = superati.reduce((s, e) => s + e.cfu, 0);
-const cfuTotali = ESAMI.reduce((s, e) => s + e.cfu, 0);
-const mediaAritmetica = superati.reduce((s, e) => s + e.voto, 0) / superati.length;
-const mediaPonderata = superati.reduce((s, e) => s + e.voto * e.cfu, 0) / cfuSuperati;
-const baseLaurea = mediaPonderata * 110 / 30;
-const it = n => n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-document.getElementById("corpo-statistiche").innerHTML = `
-  <tr><td class="etichetta">Esami superati</td><td class="valore">${superati.length} su ${ESAMI.length}</td></tr>
-  <tr><td class="etichetta">CFU conseguiti (esami in elenco)</td><td class="valore">${cfuSuperati} su ${cfuTotali}</td></tr>
-  <tr><td class="etichetta">Media Aritmetica dei voti</td><td class="valore">${it(mediaAritmetica)}/30</td></tr>
-  <tr><td class="etichetta">Media Ponderata sui CFU</td><td class="valore">${it(mediaPonderata)}/30</td></tr>
-  <tr><td class="etichetta">Base di laurea (media ponderata in centodecimi)</td><td class="valore">${it(baseLaurea)}/110</td></tr>`;
+// 2) Ricerca: filtra gli esami per codice, nome o docente.
+var campo = document.getElementById("campo-cerca");
+if (campo) campo.addEventListener("input", function () {
+  var q = this.value.trim().toLowerCase();
+  document.querySelectorAll("tbody.gruppo-esame").forEach(function (gruppo) {
+    var visibile = !q || gruppo.textContent.toLowerCase().indexOf(q) !== -1;
+    gruppo.classList.toggle("nascosta", !visibile);
+  });
+});
 </script>
 
 </body>
