@@ -374,7 +374,34 @@ details.modulo input[type=text], details.modulo input[type=password]{
   color:#9E2530; font-weight:800; letter-spacing:.1em; margin-bottom:.25rem;
 }
 
+/* ============= VENTO DEL GIORNO (pannello bagnino) ============= */
+.pp-vento-giorno{padding:.9rem .9rem 1rem; border-top:1px solid #DCE6E9}
+.pp-barre{display:flex; align-items:flex-end; gap:3px; height:64px; margin:.55rem .2rem .15rem}
+.pp-barre .b{flex:1; border-radius:3px 3px 0 0; min-height:3px; background:#CBD9DE}
+.pp-barre .b.verde{background:#1B9A55}
+.pp-barre .b.gialla{background:#F0B429}
+.pp-barre .b.rossa{background:#D1343F}
+.pp-barre .b.ora{outline:2.5px solid #12242E; outline-offset:1px}
+.pp-ore{display:flex; gap:3px; margin:0 .2rem}
+.pp-ore span{flex:1; font-size:.62rem; color:#5E7683; font-family:var(--f-strumento); text-align:center}
+#pp-vento-sintesi{font-size:1rem; font-weight:700; color:#12242E; margin-top:.55rem}
+
+/* ==================== CONFRONTO MODELLI ==================== */
+#tab-modelli{width:100%; min-width:0; font-size:.8rem}
+#tab-modelli td:first-child, #tab-modelli th:first-child{font-family:var(--f-etichetta); letter-spacing:.06em}
+.accordo{display:inline-flex; align-items:center; gap:.4rem; font-weight:700; font-size:.78rem;
+  border-radius:999px; padding:.15rem .65rem; border:1px solid}
+.accordo.buono{color:var(--verde); background:var(--verde-fondo); border-color:var(--verde)}
+.accordo.medio{color:var(--giallo); background:var(--giallo-fondo); border-color:var(--giallo)}
+.accordo.basso{color:var(--rosso); background:var(--rosso-fondo); border-color:var(--rosso)}
+
 /* ==================== DIALOG POSIZIONE ==================== */
+.chips-pos{display:flex; gap:.5rem; margin-bottom:.7rem}
+.chip{flex:1; border:1.5px solid var(--filo-forte); border-radius:10px; padding:.6rem .5rem;
+  font-weight:700; font-size:.86rem; background:var(--superficie-2); text-align:center}
+.chip:hover{border-color:var(--accento)}
+details.coord-avanzate{margin-top:.6rem}
+details.coord-avanzate summary{cursor:pointer; font-size:.76rem; font-weight:700; color:var(--inchiostro-2)}
 dialog{
   border:1px solid var(--filo-forte); border-radius:var(--raggio);
   background:var(--superficie); color:var(--inchiostro);
@@ -421,7 +448,7 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
   </div>
   <nav class="tabs" role="tablist" aria-label="Viste">
     <button id="tab-tecnica" role="tab" aria-selected="true">Tecnica</button>
-    <button id="tab-bagnanti" role="tab" aria-selected="false">Bagnanti</button>
+    <button id="tab-bagnanti" role="tab" aria-selected="false">Bagnino</button>
   </nav>
 </header>
 
@@ -509,6 +536,27 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
       <p class="nota" style="margin-top:.6rem">I valori numerici completi sono nella tabella qui sotto.</p>
     </section>
 
+    <section class="card" id="card-modelli" hidden>
+      <div class="card-testa">
+        <h2>Confronto modelli · prossime 12 ore</h2>
+        <span class="dida" id="modelli-accordo-avvolgi"></span>
+      </div>
+      <div class="scroll-tabella" style="border:none">
+        <table id="tab-modelli" aria-label="Confronto tra modelli meteo">
+          <thead><tr>
+            <th scope="col" style="text-align:left">Modello</th>
+            <th scope="col">Vento medio</th><th scope="col">Raffica max</th><th scope="col">Temp. max</th>
+          </tr></thead>
+          <tbody id="corpo-modelli"></tbody>
+        </table>
+      </div>
+      <p class="nota" style="margin-top:.5rem" id="nota-modelli">
+        Stessi dati grezzi di Open-Meteo ma modelli interrogati singolarmente (ECMWF, DWD ICON,
+        NOAA GFS) più MET Norway (yr.no) come fonte indipendente. Se i modelli divergono molto,
+        la previsione è meno affidabile: prudenza.
+      </p>
+    </section>
+
     <section class="card" id="card-prossime" hidden>
       <div class="card-testa"><h2>Prossime 6 ore</h2><span class="dida">sempre in evidenza</span></div>
       <div id="prossime-ore" class="prossime-ore"></div>
@@ -587,6 +635,12 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
         </div>
       </div>
       <div class="pp-vento" id="pp-vento">—</div>
+      <div class="pp-vento-giorno">
+        <span class="occhiello" id="pp-vento-titolo">Vento nella giornata (6–21)</span>
+        <div class="pp-barre" id="pp-vento-barre" aria-hidden="true"></div>
+        <div class="pp-ore" id="pp-vento-ore" aria-hidden="true"></div>
+        <div id="pp-vento-sintesi">—</div>
+      </div>
       <div class="pp-piede">
         Bandiera calcolata da vento e onda (scale Beaufort / Douglas).
         La decisione finale spetta all'Assistente Bagnanti in servizio.
@@ -603,17 +657,25 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
 
 <dialog id="dlg-posizione">
   <h3>Imposta posizione</h3>
-  <label for="cerca-luogo">Cerca un luogo</label>
-  <input type="text" id="cerca-luogo" placeholder="es. Follonica, Punta Ala…" autocomplete="off">
+  <div class="chips-pos">
+    <button class="chip" id="chip-gps">📍 Usa GPS</button>
+    <button class="chip" id="chip-follonica">Follonica</button>
+  </div>
+  <label for="cerca-luogo">Oppure cerca un luogo (si applica al tocco)</label>
+  <input type="text" id="cerca-luogo" placeholder="es. Punta Ala, Castiglione…" autocomplete="off">
   <ul id="risultati-ricerca"></ul>
-  <label for="inp-lat">Latitudine</label>
-  <input type="text" id="inp-lat" inputmode="decimal" placeholder="42.92">
-  <label for="inp-lon">Longitudine</label>
-  <input type="text" id="inp-lon" inputmode="decimal" placeholder="10.76">
+  <details class="coord-avanzate">
+    <summary>Coordinate manuali</summary>
+    <label for="inp-lat">Latitudine</label>
+    <input type="text" id="inp-lat" inputmode="decimal" placeholder="42.92">
+    <label for="inp-lon">Longitudine</label>
+    <input type="text" id="inp-lon" inputmode="decimal" placeholder="10.76">
+    <div class="azioni" style="justify-content:flex-start">
+      <button class="bottone primario" id="dlg-salva">Usa queste coordinate</button>
+    </div>
+  </details>
   <div class="azioni">
-    <button class="bottone" id="dlg-gps">Usa GPS</button>
-    <button class="bottone" id="dlg-annulla">Annulla</button>
-    <button class="bottone primario" id="dlg-salva">Salva</button>
+    <button class="bottone" id="dlg-annulla">Chiudi</button>
   </div>
 </dialog>
 
@@ -662,13 +724,33 @@ const PARAM_MARINE_HOURLY = ["wave_height","wave_direction","wave_period","wind_
   "swell_wave_period","sea_surface_temperature"].join(",");
 const PARAM_MARINE_CURRENT = ["wave_height","wave_direction","wave_period","sea_surface_temperature"].join(",");
 
+/* Confronto multi-modello: stessi endpoint Open-Meteo ma con "models=" esplicito,
+   così ogni modello parla per sé invece del solo best_match. */
+const MODELLI_CONFRONTO = [
+  { id:"ecmwf_ifs025",  nome:"ECMWF IFS" },
+  { id:"icon_seamless", nome:"DWD ICON" },
+  { id:"gfs_seamless",  nome:"NOAA GFS" }
+];
+const ORE_CONFRONTO_MODELLI = 12;
+
 /* ================= STATO DI SESSIONE (nessun localStorage) ================= */
 const stato = {
   lat: POSIZIONE_DEFAULT.lat, lon: POSIZIONE_DEFAULT.lon,
   nomeLuogo: POSIZIONE_DEFAULT.nome, origine: "default",
-  meteo: null, marine: null, demo: false,
+  meteo: null, marine: null, modelli: null, metno: null, demo: false,
   ultimoAggiornamento: null, caricamentoInCorso: false
 };
+
+/* Memoria posizione tra le visite: localStorage con guardia try/catch, così
+   dove non è disponibile (es. artifact claude.ai) si degrada in silenzio. */
+function salvaPosizione(){
+  try { localStorage.setItem("vedetta-pos", JSON.stringify({
+    lat: stato.lat, lon: stato.lon, nome: stato.nomeLuogo, origine: stato.origine
+  })); } catch(e){}
+}
+function leggiPosizione(){
+  try { return JSON.parse(localStorage.getItem("vedetta-pos")); } catch(e){ return null; }
+}
 
 const $ = id => document.getElementById(id);
 
@@ -751,6 +833,16 @@ function urlMarine(){
     "&hourly=" + PARAM_MARINE_HOURLY + "&current=" + PARAM_MARINE_CURRENT +
     "&forecast_days=3&timezone=auto";
 }
+function urlModelli(){
+  return "https://api.open-meteo.com/v1/forecast?latitude=" + stato.lat + "&longitude=" + stato.lon +
+    "&hourly=wind_speed_10m,wind_gusts_10m,temperature_2m" +
+    "&models=" + MODELLI_CONFRONTO.map(m => m.id).join(",") +
+    "&forecast_days=2&timezone=auto&wind_speed_unit=kmh";
+}
+// MET Norway (yr.no): fonte indipendente da Open-Meteo, gratuita, CORS aperto.
+function urlMetno(){
+  return "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=" + stato.lat + "&lon=" + stato.lon;
+}
 
 async function caricaDati(conRetry = true){
   if (stato.caricamentoInCorso) return;
@@ -761,21 +853,27 @@ async function caricaDati(conRetry = true){
   try {
     // Primo giro: UN tentativo per capire subito se la rete è raggiungibile
     // (in un artifact claude.ai la CSP blocca fetch esterni all'istante).
-    const [m1, m2] = await Promise.allSettled([
+    const [m1, m2, m3, m4] = await Promise.allSettled([
       fetchJson(urlForecast(), "Forecast", 1),
-      fetchJson(urlMarine(),  "Marine",  1)
+      fetchJson(urlMarine(),  "Marine",  1),
+      fetchJson(urlModelli(), "Modelli", 1),
+      fetchJson(urlMetno(),   "MET Norway", 1)
     ]);
-    let meteo = m1, marine = m2;
+    let meteo = m1, marine = m2, modelli = m3, metno = m4;
     if (m1.status === "rejected" && conRetry){
       // rete forse instabile: riprova con backoff 2/4/8 s
-      [meteo, marine] = await Promise.allSettled([
+      [meteo, marine, modelli, metno] = await Promise.allSettled([
         fetchJson(urlForecast(), "Forecast", RETRY_TENTATIVI),
-        fetchJson(urlMarine(),  "Marine",  RETRY_TENTATIVI)
+        fetchJson(urlMarine(),  "Marine",  RETRY_TENTATIVI),
+        fetchJson(urlModelli(), "Modelli", 1),
+        fetchJson(urlMetno(),   "MET Norway", 1)
       ]);
     }
     if (meteo.status === "rejected") throw meteo.reason;
     stato.meteo = meteo.value;
     stato.marine = marine.status === "fulfilled" ? marine.value : null;
+    stato.modelli = modelli.status === "fulfilled" ? modelli.value : null;
+    stato.metno = metno.status === "fulfilled" ? metno.value : null;
     stato.demo = false;
     document.documentElement.removeAttribute("data-demo");
     stato.ultimoAggiornamento = new Date();
@@ -795,6 +893,7 @@ async function caricaDati(conRetry = true){
   } finally {
     stato.caricamentoInCorso = false;
     $("caricamento").classList.remove("visibile");
+    if (stato.ricaricaRichiesta){ stato.ricaricaRichiesta = false; caricaDati(); }
   }
 }
 
@@ -814,7 +913,8 @@ function impostaSpiaDati(modo){
    mattino calmo da grecale, pomeriggio maestrale/ponente 15–25 km/h),
    SEMPRE marcati come non reali in testata e nel pannello bagnanti.  */
 function generaDemo(){
-  const oraInizio = new Date(); oraInizio.setMinutes(0,0,0);
+  // come l'API vera: le serie orarie partono dalla mezzanotte di oggi
+  const oraInizio = new Date(); oraInizio.setHours(0,0,0,0);
   const tempi=[], t2m=[], app=[], pmsl=[], psup=[], ws=[], wd=[], wg=[],
         cc=[], pp=[], pr=[], uv=[], wc=[],
         wh=[], wdir=[], wper=[], swh=[], swd=[], swp=[], sst=[];
@@ -863,6 +963,16 @@ function generaDemo(){
       swell_wave_height:swh, swell_wave_direction:swd, swell_wave_period:swp,
       sea_surface_temperature:sst }
   };
+  const hm = { time: tempi };
+  MODELLI_CONFRONTO.forEach((m, k) => {
+    hm["wind_speed_10m_" + m.id]   = ws.map(v => +(v * (1 + 0.08*(k-1))).toFixed(1));
+    hm["wind_gusts_10m_" + m.id]   = wg.map(v => +(v * (1 + 0.1*(k-1))).toFixed(1));
+    hm["temperature_2m_" + m.id]   = t2m.map(v => +(v + 0.4*(k-1)).toFixed(1));
+  });
+  stato.modelli = { hourly: hm };
+  stato.metno = { properties:{ timeseries:[{ data:{ instant:{ details:{
+    air_temperature: t2m[0] + 0.3, wind_speed: +(ws[0]/3.6).toFixed(1), wind_from_direction: wd[0]
+  }}}}]}};
   stato.demo = true;
   document.documentElement.setAttribute("data-demo","");
   stato.ultimoAggiornamento = new Date();
@@ -1168,6 +1278,103 @@ function renderTabella(){
   $("card-tabella").hidden = false;
 }
 
+/* Confronto modelli: media/massimi sulle prossime ORE_CONFRONTO_MODELLI ore
+   per ogni modello interrogato singolarmente, più MET Norway come riga "adesso". */
+function renderModelli(){
+  const card = $("card-modelli");
+  if (!stato.modelli?.hourly?.time){ card.hidden = true; return; }
+  const hm = stato.modelli.hourly;
+  const i0 = indiceOraCorrente(hm.time);
+  const fine = Math.min(i0 + ORE_CONFRONTO_MODELLI, hm.time.length);
+  let righe = "", medie = [];
+  for (const m of MODELLI_CONFRONTO){
+    const vs = hm["wind_speed_10m_" + m.id], rf = hm["wind_gusts_10m_" + m.id], tt = hm["temperature_2m_" + m.id];
+    if (!vs){ continue; }
+    let somma = 0, n = 0, raffMax = null, tMax = null;
+    for (let i = i0; i < fine; i++){
+      if (vs[i] != null){ somma += vs[i]; n++; }
+      if (rf?.[i] != null) raffMax = Math.max(raffMax ?? -1, rf[i]);
+      if (tt?.[i] != null) tMax = Math.max(tMax ?? -99, tt[i]);
+    }
+    const media = n ? somma/n : null;
+    if (media != null) medie.push(media);
+    righe += "<tr><td style='text-align:left'>" + m.nome + "</td>" +
+      "<td>" + (media!=null ? num(media) + " km/h" : "—") + "</td>" +
+      "<td>" + (raffMax!=null ? num(raffMax) + " km/h" : "—") + "</td>" +
+      "<td>" + (tMax!=null ? num(tMax) + "°" : "—") + "</td></tr>";
+  }
+  const det = stato.metno?.properties?.timeseries?.[0]?.data?.instant?.details;
+  if (det){
+    righe += "<tr><td style='text-align:left'>MET Norway · adesso</td>" +
+      "<td>" + (det.wind_speed!=null ? num(det.wind_speed*3.6) + " km/h" : "—") + "</td>" +
+      "<td>—</td>" +
+      "<td>" + (det.air_temperature!=null ? num(det.air_temperature) + "°" : "—") + "</td></tr>";
+  }
+  if (!righe){ card.hidden = true; return; }
+  $("corpo-modelli").innerHTML = righe;
+  // accordo: scarto fra le medie vento dei modelli
+  const avv = $("modelli-accordo-avvolgi");
+  if (medie.length >= 2){
+    const scarto = Math.max(...medie) - Math.min(...medie);
+    const cls = scarto < 5 ? "buono" : scarto < 10 ? "medio" : "basso";
+    const testo = scarto < 5 ? "buon accordo" : scarto < 10 ? "accordo moderato" : "modelli discordi: prudenza";
+    avv.innerHTML = '<span class="accordo ' + cls + '">' + testo + " · Δ" + num(scarto) + " km/h</span>";
+  } else avv.textContent = "";
+  card.hidden = false;
+}
+
+/* Vento del giorno per il pannello bagnino: barre orarie 6–21 colorate con le
+   soglie bandiera + sintesi testuale "si alza / cala". */
+function renderVentoGiorno(){
+  const h = stato.meteo.hourly;
+  const i0 = indiceOraCorrente(h.time);
+  const oggi = h.time[i0].slice(0,10);
+  const oraAttuale = parseInt(h.time[i0].slice(11,13), 10);
+  const ORA_MIN = 6, ORA_MAX = 21, SCALA_MAX = 45;
+  // dopo le 21 la giornata utile è finita: si mostra domani
+  let giornoTarget = oggi, etichetta = "Vento nella giornata (6–21)";
+  if (oraAttuale > ORA_MAX){
+    const domani = h.time.find(t => t.slice(0,10) > oggi);
+    if (domani){ giornoTarget = domani.slice(0,10); etichetta = "Vento domani (6–21)"; }
+  }
+  $("pp-vento-titolo").textContent = etichetta;
+  const punti = [];
+  for (let i = 0; i < h.time.length; i++){
+    if (h.time[i].slice(0,10) !== giornoTarget) continue;
+    const ora = parseInt(h.time[i].slice(11,13), 10);
+    if (ora < ORA_MIN || ora > ORA_MAX) continue;
+    punti.push({ ora, v: h.wind_speed_10m[i] });
+  }
+  const S = BANDIERA_SOGLIE;
+  $("pp-vento-barre").innerHTML = punti.map(p => {
+    const cls = p.v == null ? "" :
+      p.v >= S.VENTO_ROSSO_KMH ? "rossa" : p.v >= S.VENTO_VERDE_KMH ? "gialla" : "verde";
+    const alt = Math.max(5, Math.min(100, (p.v ?? 0) / SCALA_MAX * 100));
+    return '<div class="b ' + cls + (giornoTarget === oggi && p.ora === oraAttuale ? " ora" : "") +
+      '" style="height:' + alt + '%" title="' + p.ora + ':00 — ' + num(p.v) + ' km/h"></div>';
+  }).join("");
+  $("pp-vento-ore").innerHTML = punti.map(p =>
+    "<span>" + (p.ora % 3 === 0 ? p.ora : "") + "</span>").join("");
+
+  // sintesi: picco, ora di salita (60% del picco), ora di calo
+  let sintesi = "";
+  const validi = punti.filter(p => p.v != null);
+  if (validi.length){
+    const picco = validi.reduce((a,b) => b.v > a.v ? b : a);
+    if (picco.v < 12){
+      sintesi = "Vento debole per tutta la giornata (max " + num(picco.v) + " km/h).";
+    } else {
+      const soglia = picco.v * 0.6;
+      const salita = validi.find(p => p.v >= soglia);
+      const calo = validi.find(p => p.ora > picco.ora && p.v < soglia);
+      sintesi = "Si alza verso le " + salita.ora + " · massimo " + num(picco.v) +
+        " km/h alle " + picco.ora +
+        (calo ? " · cala dopo le " + calo.ora + "." : " · resta sostenuto fino a sera.");
+    }
+  }
+  $("pp-vento-sintesi").textContent = sintesi;
+}
+
 function renderPubblico(){
   const c = stato.meteo.current, h = stato.meteo.hourly, cm = stato.marine?.current;
   const i0 = indiceOraCorrente(h.time);
@@ -1201,9 +1408,11 @@ function renderTutto(){
   renderAdesso();
   $("card-grafici").hidden = false;
   aggiornaGrafici();
+  renderModelli();
   renderProssime();
   renderTabella();
   renderPubblico();
+  renderVentoGiorno();
   $("ultimo-agg").textContent = "aggiornato: " +
     stato.ultimoAggiornamento.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) +
     (stato.demo ? " (demo)" : "");
@@ -1224,34 +1433,33 @@ function aggiornaSpiaPosizione(){
     s.textContent = "posizione di default: Follonica — verifica le coordinate dello stabilimento";
   }
 }
+/* Imposta la posizione, la ricorda e ricarica i dati: unico punto d'ingresso. */
+function impostaPosizione(lat, lon, nome, origine){
+  stato.lat = +(+lat).toFixed(4); stato.lon = +(+lon).toFixed(4);
+  stato.nomeLuogo = nome; stato.origine = origine;
+  salvaPosizione();
+  aggiornaSpiaPosizione();
+  if (stato.caricamentoInCorso) stato.ricaricaRichiesta = true;
+  else caricaDati();
+}
+
+/* GPS non bloccante: i dati sono GIÀ in caricamento con la posizione corrente;
+   se il fix arriva ed è distante più di ~500 m, si ricarica su quella. */
 function richiediGPS(){
-  if (!("geolocation" in navigator)){ aggiornaSpiaPosizione(); caricaDati(); return; }
-  // Watchdog: alcuni browser non chiamano MAI il callback se il prompt del
-  // permesso resta senza risposta — dopo 10 s si parte comunque con Follonica.
-  let gpsRisposto = false;
-  setTimeout(() => {
-    if (gpsRisposto) return;
-    gpsRisposto = true;
-    aggiornaSpiaPosizione(); caricaDati();
-  }, 10000);
+  if (!("geolocation" in navigator)){
+    mostraErrore("Geolocalizzazione non disponibile su questo dispositivo."); return;
+  }
   navigator.geolocation.getCurrentPosition(
     pos => {
-      if (gpsRisposto) return;
-      gpsRisposto = true;
-      stato.lat = +pos.coords.latitude.toFixed(4);
-      stato.lon = +pos.coords.longitude.toFixed(4);
-      stato.origine = "gps"; stato.nomeLuogo = "posizione attuale";
-      aggiornaSpiaPosizione(); caricaDati();
+      const la = pos.coords.latitude, lo = pos.coords.longitude;
+      const distante = Math.abs(la - stato.lat) > 0.005 || Math.abs(lo - stato.lon) > 0.005;
+      if (distante || stato.origine !== "gps")
+        impostaPosizione(la, lo, "posizione attuale", "gps");
     },
     err => {
-      if (gpsRisposto) return;
-      gpsRisposto = true;
-      stato.lat = POSIZIONE_DEFAULT.lat; stato.lon = POSIZIONE_DEFAULT.lon;
-      stato.nomeLuogo = POSIZIONE_DEFAULT.nome; stato.origine = "default";
-      aggiornaSpiaPosizione();
       if (err.code === err.PERMISSION_DENIED)
-        mostraErrore("Permesso di geolocalizzazione negato: uso Follonica. Imposta la posizione esatta con il pulsante «Posizione».");
-      caricaDati();
+        mostraErrore("Permesso GPS negato: continuo con «" + stato.nomeLuogo +
+          "». Puoi cambiare posizione dal pulsante «Posizione».");
     },
     {enableHighAccuracy:false, timeout:8000, maximumAge:300000}
   );
@@ -1336,30 +1544,32 @@ $("btn-posizione").addEventListener("click", () => {
   $("dlg-posizione").showModal();
 });
 $("dlg-annulla").addEventListener("click", () => $("dlg-posizione").close());
-$("dlg-gps").addEventListener("click", () => { $("dlg-posizione").close(); richiediGPS(); });
+$("chip-gps").addEventListener("click", () => { $("dlg-posizione").close(); richiediGPS(); });
+$("chip-follonica").addEventListener("click", () => {
+  $("dlg-posizione").close();
+  impostaPosizione(POSIZIONE_DEFAULT.lat, POSIZIONE_DEFAULT.lon, POSIZIONE_DEFAULT.nome, "manuale");
+});
 $("dlg-salva").addEventListener("click", () => {
   const lat = parseFloat($("inp-lat").value.replace(",", "."));
   const lon = parseFloat($("inp-lon").value.replace(",", "."));
   if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180){
     alert("Coordinate non valide."); return;
   }
-  stato.lat = lat; stato.lon = lon; stato.origine = "manuale";
-  if (!$("cerca-luogo").dataset.scelto) stato.nomeLuogo = "punto personalizzato";
   $("dlg-posizione").close();
-  aggiornaSpiaPosizione(); caricaDati();
+  impostaPosizione(lat, lon, "punto personalizzato", "manuale");
 });
 $("cerca-luogo").addEventListener("input", e => {
-  delete e.target.dataset.scelto;
   clearTimeout(timerRicerca);
   timerRicerca = setTimeout(() => cercaLuogo(e.target.value), 350);
 });
+// un tocco sul risultato applica subito la posizione (niente passaggi in più)
 $("risultati-ricerca").addEventListener("click", e => {
   const li = e.target.closest("li[data-lat]");
   if (!li) return;
-  $("inp-lat").value = li.dataset.lat; $("inp-lon").value = li.dataset.lon;
-  stato.nomeLuogo = li.dataset.nome;
-  $("cerca-luogo").dataset.scelto = "1";
   $("risultati-ricerca").innerHTML = "";
+  $("cerca-luogo").value = "";
+  $("dlg-posizione").close();
+  impostaPosizione(li.dataset.lat, li.dataset.lon, li.dataset.nome, "manuale");
 });
 $("sir-attivo").addEventListener("change", aggiornaSIR);
 $("comp-test").addEventListener("click", confrontaComparativa);
@@ -1380,8 +1590,18 @@ costruisciGrafico("tela-onda", "tt-onda", {
   fmtTooltip:(i,d) => "onda " + num(d.serie[i],2) + " m · " + descrizioneDouglas(d.serie[i])
 });
 
+/* Avvio istantaneo: si parte SUBITO con l'ultima posizione ricordata (o il
+   default Follonica) senza aspettare il GPS; il prompt GPS compare solo alla
+   prima visita in assoluto, poi resta disponibile dal pulsante «Posizione». */
+const posSalvata = leggiPosizione();
+if (posSalvata && isFinite(posSalvata.lat) && isFinite(posSalvata.lon)){
+  stato.lat = posSalvata.lat; stato.lon = posSalvata.lon;
+  stato.nomeLuogo = posSalvata.nome || "posizione salvata";
+  stato.origine = posSalvata.origine || "manuale";
+}
 aggiornaSpiaPosizione();
-richiediGPS();  // chiede il permesso; se negato, fallback su Follonica e carica comunque
+caricaDati();
+if (!posSalvata) richiediGPS();  // solo prima visita: se accordato, affina e ricorda
 setInterval(() => { if (!stato.demo) caricaDati(); aggiornaSIR(); }, REFRESH_MINUTI*60*1000);
 
 /* ==========================================================================
