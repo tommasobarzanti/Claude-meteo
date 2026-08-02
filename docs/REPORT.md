@@ -1,7 +1,7 @@
 # Vedetta — Report tecnico
 
 **Progetto:** console meteo-mare per Assistenti Bagnanti · Follonica (GR)
-**Data report:** 2 agosto 2026 · **Versione:** v3 (commit sul branch predefinito)
+**Data report:** 2 agosto 2026 · **Versione:** v3.1 (commit sul branch predefinito)
 **Produzione:** https://tommasobarzanti.github.io/Claude-meteo/
 **Repository:** github.com/tommasobarzanti/Claude-meteo
 
@@ -44,16 +44,18 @@ per contrasto ≥3:1 e daltonismo (CVD ΔE) in entrambi i temi.
 | Fonte | Uso | Note |
 |---|---|---|
 | Open-Meteo Forecast (`best_match`) | pipeline principale 72 h | ECMWF IFS + DWD ICON, GFS a riempimento |
-| Open-Meteo Forecast con `models=` | scheda "Confronto modelli" | ECMWF IFS 0.25°, ICON seamless, GFS seamless interrogati singolarmente |
 | Open-Meteo Marine | onde, swell, T mare | MFWAM / ECMWF WAM |
-| MET Norway locationforecast 2.0 | riga di confronto "adesso" | fonte **indipendente** da Open-Meteo, gratuita, CORS aperto |
+| RainViewer (embed) | card "Radar pioggia": mappa interattiva | radar osservato + nowcast a brevissimo termine, nessuna chiave |
 | Open-Meteo Geocoding | ricerca luogo nel dialog posizione | |
 | SIR Toscana | modulo opzionale, spento | serve un proxy proprio (niente CORS sul portale) |
 
-La scheda modelli calcola un **indicatore di accordo** (scarto fra le medie
-vento a 12 h): Δ<5 km/h buono, 5–10 moderato, >10 "prudenza". È il modo
-tecnicamente onesto di "avere più dati": non una media cieca, ma la misura di
-quanto i centri di calcolo concordano.
+**Confronto con 3BMeteo / IlMeteo (richiesta utente):** entrambe le testate
+non espongono API pubbliche leggibili dal browser (3BMeteo vende un'API
+commerciale; IlMeteo non ne ha; lo scraping è bloccato dal CORS e vietato dai
+ToS). Come concordato, **nessun confronto numerico in pagina**: la card
+"Seconda opinione" apre con un tocco la previsione della fonte originale
+(3BMeteo, IlMeteo, MeteoAM, meteoblue) già puntata sulla zona. La precedente
+card di confronto multi-modello è stata rimossa su feedback utente.
 
 ### ⚠ Licenze — punto critico per la monetizzazione
 - **Open-Meteo API gratuita: solo uso NON commerciale.** Un prodotto a
@@ -78,12 +80,10 @@ banner e la modalità demo nascono da lì).
 1. Blocco `current=` dell'API Marine mai testato con rete vera — se un
    parametro fosse invalido l'errore compare nel banner rosso ed esiste già il
    fallback sulla serie oraria. **Da verificare alla prima apertura.**
-2. Nomi modello `ecmwf_ifs025` / `icon_seamless` / `gfs_seamless` da
-   conoscenza + cross-check documentale, non da chiamata live: stessa
-   mitigazione (la card si nasconde da sola se la risposta non arriva).
-3. MET Norway dal browser: CORS storicamente aperto, ma non verificabile
-   dall'ambiente di sviluppo; fallimento silenzioso previsto (la riga sparisce).
-4. Nessun test automatico di regressione sul calcolo bandiera (v. backlog).
+2. Parametri dell'URL embed RainViewer da conoscenza, non verificabili live
+   dall'ambiente di sviluppo: la mappa tollera parametri ignoti (carica con i
+   default), quindi il rischio è solo di zoom/centratura non ottimali.
+3. Nessun test automatico di regressione sul calcolo bandiera (v. backlog).
 
 ## 5. Problemi noti risolti in v3 (feedback settimana di prova)
 

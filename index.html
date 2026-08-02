@@ -386,14 +386,20 @@ details.modulo input[type=text], details.modulo input[type=password]{
 .pp-ore span{flex:1; font-size:.62rem; color:#5E7683; font-family:var(--f-strumento); text-align:center}
 #pp-vento-sintesi{font-size:1rem; font-weight:700; color:#12242E; margin-top:.55rem}
 
-/* ==================== CONFRONTO MODELLI ==================== */
-#tab-modelli{width:100%; min-width:0; font-size:.8rem}
-#tab-modelli td:first-child, #tab-modelli th:first-child{font-family:var(--f-etichetta); letter-spacing:.06em}
-.accordo{display:inline-flex; align-items:center; gap:.4rem; font-weight:700; font-size:.78rem;
-  border-radius:999px; padding:.15rem .65rem; border:1px solid}
-.accordo.buono{color:var(--verde); background:var(--verde-fondo); border-color:var(--verde)}
-.accordo.medio{color:var(--giallo); background:var(--giallo-fondo); border-color:var(--giallo)}
-.accordo.basso{color:var(--rosso); background:var(--rosso-fondo); border-color:var(--rosso)}
+/* ==================== RADAR PIOGGIA + SECONDA OPINIONE ==================== */
+.radar-avvolgi{
+  border:1px solid var(--filo); border-radius:10px; overflow:hidden;
+  height:min(62vw, 420px); background:var(--superficie-2);
+}
+.radar-avvolgi iframe{width:100%; height:100%; border:0; display:block}
+.fonti-chips{display:flex; flex-wrap:wrap; gap:.5rem}
+.fonti-chips a{
+  flex:1 1 40%; min-width:130px; text-align:center; text-decoration:none;
+  border:1.5px solid var(--filo-forte); border-radius:10px; padding:.6rem .5rem;
+  font-weight:700; font-size:.86rem; color:var(--inchiostro); background:var(--superficie-2);
+}
+.fonti-chips a:hover{border-color:var(--accento); color:var(--accento)}
+.fonti-chips a small{display:block; font-weight:500; font-size:.68rem; color:var(--inchiostro-3)}
 
 /* ==================== DIALOG POSIZIONE ==================== */
 .chips-pos{display:flex; gap:.5rem; margin-bottom:.7rem}
@@ -536,24 +542,31 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
       <p class="nota" style="margin-top:.6rem">I valori numerici completi sono nella tabella qui sotto.</p>
     </section>
 
-    <section class="card" id="card-modelli" hidden>
+    <section class="card" id="card-radar" hidden>
       <div class="card-testa">
-        <h2>Confronto modelli · prossime 12 ore</h2>
-        <span class="dida" id="modelli-accordo-avvolgi"></span>
+        <h2>Radar pioggia</h2>
+        <span class="dida">osservato + tendenza a breve · trascina e zooma</span>
       </div>
-      <div class="scroll-tabella" style="border:none">
-        <table id="tab-modelli" aria-label="Confronto tra modelli meteo">
-          <thead><tr>
-            <th scope="col" style="text-align:left">Modello</th>
-            <th scope="col">Vento medio</th><th scope="col">Raffica max</th><th scope="col">Temp. max</th>
-          </tr></thead>
-          <tbody id="corpo-modelli"></tbody>
-        </table>
+      <div class="radar-avvolgi">
+        <iframe id="radar-frame" title="Radar pioggia (RainViewer)" loading="lazy" allowfullscreen></iframe>
       </div>
-      <p class="nota" style="margin-top:.5rem" id="nota-modelli">
-        Stessi dati grezzi di Open-Meteo ma modelli interrogati singolarmente (ECMWF, DWD ICON,
-        NOAA GFS) più MET Norway (yr.no) come fonte indipendente. Se i modelli divergono molto,
-        la previsione è meno affidabile: prudenza.
+      <p class="nota" style="margin-top:.5rem">
+        Radar meteorologico RainViewer: pioggia realmente osservata negli ultimi minuti e
+        proiezione a brevissimo termine — per la pioggia imminente è più affidabile di
+        qualsiasi modello di previsione. Premi ▶ sulla mappa per animare i fotogrammi.
+      </p>
+    </section>
+
+    <section class="card" id="card-fonti">
+      <div class="card-testa">
+        <h2>Seconda opinione</h2>
+        <span class="dida">si apre il sito della fonte, già sulla zona</span>
+      </div>
+      <div class="fonti-chips" id="fonti-chips"></div>
+      <p class="nota" style="margin-top:.55rem">
+        3BMeteo e IlMeteo non offrono API pubbliche leggibili da questa pagina, quindi un
+        confronto numerico qui dentro non è tecnicamente possibile in modo lecito: il tocco
+        apre direttamente la loro previsione, così il confronto lo fai sulla fonte originale.
       </p>
     </section>
 
@@ -724,20 +737,21 @@ const PARAM_MARINE_HOURLY = ["wave_height","wave_direction","wave_period","wind_
   "swell_wave_period","sea_surface_temperature"].join(",");
 const PARAM_MARINE_CURRENT = ["wave_height","wave_direction","wave_period","sea_surface_temperature"].join(",");
 
-/* Confronto multi-modello: stessi endpoint Open-Meteo ma con "models=" esplicito,
-   così ogni modello parla per sé invece del solo best_match. */
-const MODELLI_CONFRONTO = [
-  { id:"ecmwf_ifs025",  nome:"ECMWF IFS" },
-  { id:"icon_seamless", nome:"DWD ICON" },
-  { id:"gfs_seamless",  nome:"NOAA GFS" }
+/* Seconda opinione: 3BMeteo e IlMeteo non hanno API pubbliche leggibili dal
+   browser (e i loro ToS vietano lo scraping), quindi nessun confronto numerico
+   in pagina: si offrono link diretti alla previsione della fonte per la zona. */
+const FONTI_SECONDA_OPINIONE = [
+  { nome:"3BMeteo",  tipo:"nome",  url: n => "https://www.3bmeteo.com/meteo/" + n.toLowerCase().replace(/\s+/g,"-") },
+  { nome:"IlMeteo",  tipo:"nome",  url: n => "https://www.ilmeteo.it/meteo/" + encodeURIComponent(n) },
+  { nome:"MeteoAM",  tipo:"nome",  url: n => "https://www.meteoam.it/it/meteo-citta?text=" + encodeURIComponent(n), extra:"Aeronautica Militare" },
+  { nome:"meteoblue",tipo:"coord", url: (lat,lon) => "https://www.meteoblue.com/it/tempo/settimana/" + lat + "N" + lon + "E" }
 ];
-const ORE_CONFRONTO_MODELLI = 12;
 
 /* ================= STATO DI SESSIONE (nessun localStorage) ================= */
 const stato = {
   lat: POSIZIONE_DEFAULT.lat, lon: POSIZIONE_DEFAULT.lon,
   nomeLuogo: POSIZIONE_DEFAULT.nome, origine: "default",
-  meteo: null, marine: null, modelli: null, metno: null, demo: false,
+  meteo: null, marine: null, demo: false,
   ultimoAggiornamento: null, caricamentoInCorso: false
 };
 
@@ -833,16 +847,6 @@ function urlMarine(){
     "&hourly=" + PARAM_MARINE_HOURLY + "&current=" + PARAM_MARINE_CURRENT +
     "&forecast_days=3&timezone=auto";
 }
-function urlModelli(){
-  return "https://api.open-meteo.com/v1/forecast?latitude=" + stato.lat + "&longitude=" + stato.lon +
-    "&hourly=wind_speed_10m,wind_gusts_10m,temperature_2m" +
-    "&models=" + MODELLI_CONFRONTO.map(m => m.id).join(",") +
-    "&forecast_days=2&timezone=auto&wind_speed_unit=kmh";
-}
-// MET Norway (yr.no): fonte indipendente da Open-Meteo, gratuita, CORS aperto.
-function urlMetno(){
-  return "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=" + stato.lat + "&lon=" + stato.lon;
-}
 
 async function caricaDati(conRetry = true){
   if (stato.caricamentoInCorso) return;
@@ -853,27 +857,21 @@ async function caricaDati(conRetry = true){
   try {
     // Primo giro: UN tentativo per capire subito se la rete è raggiungibile
     // (in un artifact claude.ai la CSP blocca fetch esterni all'istante).
-    const [m1, m2, m3, m4] = await Promise.allSettled([
+    const [m1, m2] = await Promise.allSettled([
       fetchJson(urlForecast(), "Forecast", 1),
-      fetchJson(urlMarine(),  "Marine",  1),
-      fetchJson(urlModelli(), "Modelli", 1),
-      fetchJson(urlMetno(),   "MET Norway", 1)
+      fetchJson(urlMarine(),  "Marine",  1)
     ]);
-    let meteo = m1, marine = m2, modelli = m3, metno = m4;
+    let meteo = m1, marine = m2;
     if (m1.status === "rejected" && conRetry){
       // rete forse instabile: riprova con backoff 2/4/8 s
-      [meteo, marine, modelli, metno] = await Promise.allSettled([
+      [meteo, marine] = await Promise.allSettled([
         fetchJson(urlForecast(), "Forecast", RETRY_TENTATIVI),
-        fetchJson(urlMarine(),  "Marine",  RETRY_TENTATIVI),
-        fetchJson(urlModelli(), "Modelli", 1),
-        fetchJson(urlMetno(),   "MET Norway", 1)
+        fetchJson(urlMarine(),  "Marine",  RETRY_TENTATIVI)
       ]);
     }
     if (meteo.status === "rejected") throw meteo.reason;
     stato.meteo = meteo.value;
     stato.marine = marine.status === "fulfilled" ? marine.value : null;
-    stato.modelli = modelli.status === "fulfilled" ? modelli.value : null;
-    stato.metno = metno.status === "fulfilled" ? metno.value : null;
     stato.demo = false;
     document.documentElement.removeAttribute("data-demo");
     stato.ultimoAggiornamento = new Date();
@@ -963,16 +961,6 @@ function generaDemo(){
       swell_wave_height:swh, swell_wave_direction:swd, swell_wave_period:swp,
       sea_surface_temperature:sst }
   };
-  const hm = { time: tempi };
-  MODELLI_CONFRONTO.forEach((m, k) => {
-    hm["wind_speed_10m_" + m.id]   = ws.map(v => +(v * (1 + 0.08*(k-1))).toFixed(1));
-    hm["wind_gusts_10m_" + m.id]   = wg.map(v => +(v * (1 + 0.1*(k-1))).toFixed(1));
-    hm["temperature_2m_" + m.id]   = t2m.map(v => +(v + 0.4*(k-1)).toFixed(1));
-  });
-  stato.modelli = { hourly: hm };
-  stato.metno = { properties:{ timeseries:[{ data:{ instant:{ details:{
-    air_temperature: t2m[0] + 0.3, wind_speed: +(ws[0]/3.6).toFixed(1), wind_from_direction: wd[0]
-  }}}}]}};
   stato.demo = true;
   document.documentElement.setAttribute("data-demo","");
   stato.ultimoAggiornamento = new Date();
@@ -1278,49 +1266,32 @@ function renderTabella(){
   $("card-tabella").hidden = false;
 }
 
-/* Confronto modelli: media/massimi sulle prossime ORE_CONFRONTO_MODELLI ore
-   per ogni modello interrogato singolarmente, più MET Norway come riga "adesso". */
-function renderModelli(){
-  const card = $("card-modelli");
-  if (!stato.modelli?.hourly?.time){ card.hidden = true; return; }
-  const hm = stato.modelli.hourly;
-  const i0 = indiceOraCorrente(hm.time);
-  const fine = Math.min(i0 + ORE_CONFRONTO_MODELLI, hm.time.length);
-  let righe = "", medie = [];
-  for (const m of MODELLI_CONFRONTO){
-    const vs = hm["wind_speed_10m_" + m.id], rf = hm["wind_gusts_10m_" + m.id], tt = hm["temperature_2m_" + m.id];
-    if (!vs){ continue; }
-    let somma = 0, n = 0, raffMax = null, tMax = null;
-    for (let i = i0; i < fine; i++){
-      if (vs[i] != null){ somma += vs[i]; n++; }
-      if (rf?.[i] != null) raffMax = Math.max(raffMax ?? -1, rf[i]);
-      if (tt?.[i] != null) tMax = Math.max(tMax ?? -99, tt[i]);
-    }
-    const media = n ? somma/n : null;
-    if (media != null) medie.push(media);
-    righe += "<tr><td style='text-align:left'>" + m.nome + "</td>" +
-      "<td>" + (media!=null ? num(media) + " km/h" : "—") + "</td>" +
-      "<td>" + (raffMax!=null ? num(raffMax) + " km/h" : "—") + "</td>" +
-      "<td>" + (tMax!=null ? num(tMax) + "°" : "—") + "</td></tr>";
+/* Radar pioggia RainViewer: mappa interattiva incorporata, centrata sulla
+   posizione corrente. In modalità demo la card resta nascosta (niente rete). */
+let urlRadarCorrente = "";
+function aggiornaRadar(){
+  const card = $("card-radar");
+  if (stato.demo){ card.hidden = true; return; }
+  const url = "https://www.rainviewer.com/map.html?loc=" + stato.lat + "," + stato.lon +
+    ",8&oCS=1&c=3&o=83&lm=1&layer=radar&sm=1&sn=1";
+  if (url !== urlRadarCorrente){        // niente reload dell'iframe a ogni refresh
+    urlRadarCorrente = url;
+    $("radar-frame").src = url;
   }
-  const det = stato.metno?.properties?.timeseries?.[0]?.data?.instant?.details;
-  if (det){
-    righe += "<tr><td style='text-align:left'>MET Norway · adesso</td>" +
-      "<td>" + (det.wind_speed!=null ? num(det.wind_speed*3.6) + " km/h" : "—") + "</td>" +
-      "<td>—</td>" +
-      "<td>" + (det.air_temperature!=null ? num(det.air_temperature) + "°" : "—") + "</td></tr>";
-  }
-  if (!righe){ card.hidden = true; return; }
-  $("corpo-modelli").innerHTML = righe;
-  // accordo: scarto fra le medie vento dei modelli
-  const avv = $("modelli-accordo-avvolgi");
-  if (medie.length >= 2){
-    const scarto = Math.max(...medie) - Math.min(...medie);
-    const cls = scarto < 5 ? "buono" : scarto < 10 ? "medio" : "basso";
-    const testo = scarto < 5 ? "buon accordo" : scarto < 10 ? "accordo moderato" : "modelli discordi: prudenza";
-    avv.innerHTML = '<span class="accordo ' + cls + '">' + testo + " · Δ" + num(scarto) + " km/h</span>";
-  } else avv.textContent = "";
   card.hidden = false;
+}
+
+/* Link "seconda opinione": per le fonti a ricerca per nome si usa il nome del
+   luogo quando è reale, altrimenti il default Follonica. meteoblue va a coordinate. */
+function aggiornaLinkFonti(){
+  const nomeValido = !["posizione attuale","punto personalizzato","posizione salvata"].includes(stato.nomeLuogo);
+  const nome = nomeValido ? stato.nomeLuogo : POSIZIONE_DEFAULT.nome;
+  $("fonti-chips").innerHTML = FONTI_SECONDA_OPINIONE.map(f => {
+    const url = f.tipo === "coord" ? f.url(stato.lat, stato.lon) : f.url(nome);
+    const sotto = f.tipo === "coord" ? "sulle coordinate esatte" : (f.extra || nome);
+    return '<a href="' + url + '" target="_blank" rel="noopener">' + f.nome +
+      "<small>" + sotto + "</small></a>";
+  }).join("");
 }
 
 /* Vento del giorno per il pannello bagnino: barre orarie 6–21 colorate con le
@@ -1408,7 +1379,8 @@ function renderTutto(){
   renderAdesso();
   $("card-grafici").hidden = false;
   aggiornaGrafici();
-  renderModelli();
+  aggiornaRadar();
+  aggiornaLinkFonti();
   renderProssime();
   renderTabella();
   renderPubblico();
