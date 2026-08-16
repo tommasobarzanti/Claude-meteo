@@ -28,6 +28,7 @@
   --accento-inchiostro:#FFFFFF;
   --serie-vento:#0F5C99;      /* validato: contrasto ≥3:1 su --superficie */
   --serie-onda:#0891B2;       /* validato */
+  --serie-pioggia:#4756C4;    /* validato */
   --griglia:#E3EBEC;
   /* semaforo bandiera — semantico, mai usato come accento */
   --verde:#177245;      --verde-fondo:#DDF2E4;
@@ -55,6 +56,7 @@
     --accento-inchiostro:#06121A;
     --serie-vento:#3987E5;
     --serie-onda:#1E9CB8;
+    --serie-pioggia:#6E7EE8;
     --griglia:#16303C;
     --verde:#4CC98A;   --verde-fondo:#0E3A26;
     --giallo:#E8B84B;  --giallo-fondo:#3D2F0A;
@@ -68,7 +70,7 @@
   --inchiostro:#E4EEF2; --inchiostro-2:#9DB4BE; --inchiostro-3:#6E8894;
   --filo:#1D3946; --filo-forte:#2C4B59;
   --accento:#3987E5; --accento-inchiostro:#06121A;
-  --serie-vento:#3987E5; --serie-onda:#1E9CB8; --griglia:#16303C;
+  --serie-vento:#3987E5; --serie-onda:#1E9CB8; --serie-pioggia:#6E7EE8; --griglia:#16303C;
   --verde:#4CC98A; --verde-fondo:#0E3A26;
   --giallo:#E8B84B; --giallo-fondo:#3D2F0A;
   --rosso:#F07882; --rosso-fondo:#471A20;
@@ -374,6 +376,22 @@ details.modulo input[type=text], details.modulo input[type=password]{
   color:#9E2530; font-weight:800; letter-spacing:.1em; margin-bottom:.25rem;
 }
 
+/* ==================== ALLERTA TEMPORALE ==================== */
+.allerta-temporale{
+  border:2px solid var(--rosso); background:var(--rosso-fondo); color:var(--rosso);
+  border-radius:var(--raggio); padding:.7rem .9rem; margin-bottom:.9rem;
+  font-weight:800; font-size:.95rem; text-align:center;
+}
+.allerta-temporale small{display:block; font-weight:600; font-size:.76rem; margin-top:.2rem}
+
+/* spia dati vecchi */
+.stantio{color:var(--rosso); font-weight:800}
+
+/* barre pioggia (pannello bagnino, palette fissa chiara, rampa monocroma blu) */
+.pp-barre .b.pb0{background:#C9DCEA}
+.pp-barre .b.pb1{background:#4E97CE}
+.pp-barre .b.pb2{background:#12557F}
+
 /* ============= VENTO DEL GIORNO (pannello bagnino) ============= */
 .pp-vento-giorno{padding:.9rem .9rem 1rem; border-top:1px solid #DCE6E9}
 .pp-barre{display:flex; align-items:flex-end; gap:3px; height:64px; margin:.55rem .2rem .15rem}
@@ -460,6 +478,7 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
 
 <main>
   <div class="fascia-demo" role="alert">Modalità dimostrativa — dati sintetici, non reali</div>
+  <div id="allerta-temporale" class="allerta-temporale" role="alert" hidden></div>
 
   <div id="avviso-rete" class="avviso-rete" role="alert">
     <div id="testo-errore"></div>
@@ -537,6 +556,18 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
         <div class="tela-avvolgi" id="avv-onda">
           <canvas class="tela" id="tela-onda" aria-hidden="true"></canvas>
           <div class="tooltip-grafico" id="tt-onda"></div>
+        </div>
+      </div>
+      <div class="grafico-blocco">
+        <div class="grafico-testa">
+          <h3>Pioggia · probabilità %</h3>
+          <div class="legenda" aria-hidden="true">
+            <span><span class="leg-area" style="background:color-mix(in srgb, var(--serie-pioggia) 22%, transparent); border-bottom-color:var(--serie-pioggia)"></span>probabilità (mm nel dettaglio al tocco)</span>
+          </div>
+        </div>
+        <div class="tela-avvolgi" id="avv-pioggia">
+          <canvas class="tela" id="tela-pioggia" aria-hidden="true"></canvas>
+          <div class="tooltip-grafico" id="tt-pioggia"></div>
         </div>
       </div>
       <p class="nota" style="margin-top:.6rem">I valori numerici completi sono nella tabella qui sotto.</p>
@@ -654,6 +685,12 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
         <div class="pp-ore" id="pp-vento-ore" aria-hidden="true"></div>
         <div id="pp-vento-sintesi">—</div>
       </div>
+      <div class="pp-vento-giorno">
+        <span class="occhiello" id="pp-pioggia-titolo">Pioggia nella giornata (6–21)</span>
+        <div class="pp-barre" id="pp-pioggia-barre" aria-hidden="true"></div>
+        <div class="pp-ore" id="pp-pioggia-ore" aria-hidden="true"></div>
+        <div id="pp-pioggia-sintesi">—</div>
+      </div>
       <div class="pp-piede">
         Bandiera calcolata da vento e onda (scale Beaufort / Douglas).
         La decisione finale spetta all'Assistente Bagnanti in servizio.
@@ -713,7 +750,13 @@ const BANDIERA_SOGLIE = {
 };
 const PRESSIONE_DELTA_HPA = 1.0;   // variazione su 3h per dire salita/calo
 const PRESSIONE_ORE_CONFRONTO = 3;
-const ORE_GRAFICO = 48;            // finestra dei due grafici
+const ORE_GRAFICO = 48;            // finestra dei grafici
+
+/* Pioggia e temporali */
+const PIOGGIA_SOGLIE = { BASSA: 20, ALTA: 50 };   // % probabilità: colori barre e sintesi
+const TEMPORALE_CODICI = [95, 96, 99];            // weather_code WMO: temporale (anche con grandine)
+const ORE_ALLERTA_TEMPORALE = 12;                 // finestra di preavviso
+const DATI_VECCHI_MINUTI = 20;                    // oltre: spia "dati vecchi"
 
 const SIR_CONFIG = {
   urlJson: "",   // JSON tipo {"stazione":"…","vento_kmh":..,"temperatura":..,"ora":"…"} via proxy proprio
@@ -933,8 +976,8 @@ function generaDemo(){
     wd.push(Math.round(brezza > 0.25 ? 300 + Math.sin(i)*12 : 45 + Math.sin(i)*15));
     wg.push(+(vento*1.55).toFixed(1));
     cc.push(Math.round(15 + 20*Math.max(0,Math.sin(i/10))));
-    pp.push(h>=14 && h<=17 ? 20 : 5);
-    pr.push(0);
+    pp.push(h>=13 && h<=17 ? 55 + Math.round(20*Math.sin((h-13)/4*Math.PI)) : (h>=11 && h<=19 ? 25 : 5));
+    pr.push(h>=14 && h<=16 ? +(1.2 + Math.sin(i)).toFixed(1) : 0);
     uv.push(+(9.5*Math.pow(sole,1.6)).toFixed(1));
     wc.push(sole>0 ? (cc[i]>30?2:1) : 0);
     const onda = 0.15 + 0.45*brezza + 0.05*Math.sin(i*0.6);
@@ -961,6 +1004,9 @@ function generaDemo(){
       swell_wave_height:swh, swell_wave_direction:swd, swell_wave_period:swp,
       sea_surface_temperature:sst }
   };
+  // un temporale dimostrativo fra ~5 ore, per mostrare l'allerta
+  const oraDemo = new Date().getHours() + 5;
+  if (oraDemo < 72){ wc[oraDemo] = 95; pp[oraDemo] = 85; pr[oraDemo] = 4.0; }
   stato.demo = true;
   document.documentElement.setAttribute("data-demo","");
   stato.ultimoAggiornamento = new Date();
@@ -1056,7 +1102,7 @@ function disegnaGrafico(g){
     if (serie[i] != null) vmax = Math.max(vmax, serie[i]);
     if (banda && banda[i] != null) vmax = Math.max(vmax, banda[i]);
   }
-  vmax = vmax * 1.15;
+  vmax = cfg.vmaxFisso || vmax * 1.15;   // scala fissa per le percentuali
   const X = i => mg.sx + (W - mg.sx - mg.dx) * (n<=1 ? 0 : i/(n-1));
   const Y = v => mg.alto + (H - mg.alto - mg.basso) * (1 - v/vmax);
 
@@ -1177,6 +1223,12 @@ function aggiornaGrafici(){
   const onde = tempi.map(t => { const im = mm.get(t); return im!=null ? stato.marine.hourly.wave_height[im] : null; });
   go.dati = { tempi, serie: onde };
   disegnaGrafico(go);
+
+  const gp = grafici["tela-pioggia"];
+  gp.dati = { tempi,
+    serie: (h.precipitation_probability || []).slice(i0, fine),
+    mmOra: (h.precipitation || []).slice(i0, fine) };
+  disegnaGrafico(gp);
 }
 
 /* ============================ RENDER ============================ */
@@ -1346,6 +1398,100 @@ function renderVentoGiorno(){
   $("pp-vento-sintesi").textContent = sintesi;
 }
 
+/* Allerta temporale: weather_code 95/96/99 nelle prossime ORE_ALLERTA_TEMPORALE
+   ore. Per un bagnino temporale = fulmini = uscita dall'acqua: banner sempre
+   visibile in entrambe le viste. */
+function controllaTemporale(){
+  const banner = $("allerta-temporale");
+  const h = stato.meteo.hourly;
+  const i0 = indiceOraCorrente(h.time);
+  const adesso = TEMPORALE_CODICI.includes(stato.meteo.current?.weather_code);
+  let prima = null;
+  const fine = Math.min(i0 + ORE_ALLERTA_TEMPORALE, h.time.length);
+  for (let i = i0; i < fine; i++){
+    if (TEMPORALE_CODICI.includes(h.weather_code?.[i])){ prima = i; break; }
+  }
+  if (adesso){
+    banner.innerHTML = "⚡ TEMPORALE IN CORSO O IMMINENTE" +
+      "<small>Rischio fulmini: far uscire i bagnanti dall'acqua e liberare la battigia</small>";
+    banner.hidden = false;
+  } else if (prima != null){
+    banner.innerHTML = "⚡ Temporale previsto verso le " + fmtOra(h.time[prima]) +
+      (h.time[prima].slice(0,10) !== h.time[i0].slice(0,10) ? " di domani" : "") +
+      "<small>Rischio fulmini: prepararsi a far uscire i bagnanti dall'acqua</small>";
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+}
+
+/* Pioggia del giorno per il pannello bagnino: barre di probabilità 6–21
+   (rampa blu monocroma) + sintesi "arriva / smette" e accumulo previsto. */
+function renderPioggiaGiorno(){
+  const h = stato.meteo.hourly;
+  const i0 = indiceOraCorrente(h.time);
+  const oggi = h.time[i0].slice(0,10);
+  const oraAttuale = parseInt(h.time[i0].slice(11,13), 10);
+  const ORA_MIN = 6, ORA_MAX = 21;
+  let giornoTarget = oggi, etichetta = "Pioggia nella giornata (6–21)";
+  if (oraAttuale > ORA_MAX){
+    const domani = h.time.find(t => t.slice(0,10) > oggi);
+    if (domani){ giornoTarget = domani.slice(0,10); etichetta = "Pioggia domani (6–21)"; }
+  }
+  $("pp-pioggia-titolo").textContent = etichetta;
+  const punti = [];
+  for (let i = 0; i < h.time.length; i++){
+    if (h.time[i].slice(0,10) !== giornoTarget) continue;
+    const ora = parseInt(h.time[i].slice(11,13), 10);
+    if (ora < ORA_MIN || ora > ORA_MAX) continue;
+    punti.push({ ora, p: h.precipitation_probability?.[i], mm: h.precipitation?.[i] ?? 0 });
+  }
+  const S = PIOGGIA_SOGLIE;
+  $("pp-pioggia-barre").innerHTML = punti.map(pt => {
+    const cls = pt.p == null ? "" : pt.p >= S.ALTA ? "pb2" : pt.p >= S.BASSA ? "pb1" : "pb0";
+    const alt = Math.max(5, Math.min(100, pt.p ?? 0));
+    return '<div class="b ' + cls + (giornoTarget === oggi && pt.ora === oraAttuale ? " ora" : "") +
+      '" style="height:' + alt + '%" title="' + pt.ora + ':00 — ' + num(pt.p) + '% · ' + num(pt.mm,1) + ' mm"></div>';
+  }).join("");
+  $("pp-pioggia-ore").innerHTML = punti.map(pt =>
+    "<span>" + (pt.ora % 3 === 0 ? pt.ora : "") + "</span>").join("");
+
+  let sintesi = "";
+  const validi = punti.filter(pt => pt.p != null);
+  if (validi.length){
+    const maxP = Math.max(...validi.map(pt => pt.p));
+    const accumulo = validi.reduce((s,pt) => s + (pt.mm || 0), 0);
+    if (maxP < S.BASSA){
+      sintesi = "Nessuna pioggia significativa prevista.";
+    } else {
+      const arrivo = validi.find(pt => pt.p >= S.ALTA);
+      const fine = arrivo ? validi.find(pt => pt.ora > arrivo.ora && pt.p < S.BASSA + 10) : null;
+      if (arrivo){
+        sintesi = "Pioggia probabile dalle " + arrivo.ora +
+          (fine ? " · esaurimento verso le " + fine.ora : " · fino a sera") +
+          (accumulo >= 0.5 ? " · accumulo ~" + num(accumulo) + " mm" : "") + ".";
+      } else {
+        sintesi = "Possibili rovesci (probabilità max " + num(maxP) + "%).";
+      }
+    }
+  }
+  $("pp-pioggia-sintesi").textContent = sintesi;
+}
+
+/* Spia "dati vecchi": aggiorna l'età dei dati ogni minuto; oltre la soglia
+   la marca in rosso — utile quando il maltempo toglie la connessione. */
+function aggiornaEtaDati(){
+  if (!stato.ultimoAggiornamento) return;
+  const el = $("ultimo-agg");
+  const minuti = Math.round((Date.now() - stato.ultimoAggiornamento.getTime()) / 60000);
+  const ora = stato.ultimoAggiornamento.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
+  if (minuti > DATI_VECCHI_MINUTI){
+    el.innerHTML = '<span class="stantio">⚠ dati di ' + minuti + " min fa (" + ora + ")</span>";
+  } else {
+    el.textContent = "aggiornato: " + ora + (stato.demo ? " (demo)" : "");
+  }
+}
+
 function renderPubblico(){
   const c = stato.meteo.current, h = stato.meteo.hourly, cm = stato.marine?.current;
   const i0 = indiceOraCorrente(h.time);
@@ -1385,9 +1531,9 @@ function renderTutto(){
   renderTabella();
   renderPubblico();
   renderVentoGiorno();
-  $("ultimo-agg").textContent = "aggiornato: " +
-    stato.ultimoAggiornamento.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) +
-    (stato.demo ? " (demo)" : "");
+  renderPioggiaGiorno();
+  controllaTemporale();
+  aggiornaEtaDati();
   $("nome-luogo").textContent = stato.nomeLuogo;
 }
 
@@ -1561,6 +1707,11 @@ costruisciGrafico("tela-onda", "tt-onda", {
   fmtAsse:v => v.toFixed(1),
   fmtTooltip:(i,d) => "onda " + num(d.serie[i],2) + " m · " + descrizioneDouglas(d.serie[i])
 });
+costruisciGrafico("tela-pioggia", "tt-pioggia", {
+  tokenColore:"--serie-pioggia", minMax:100, vmaxFisso:100, areaBase:true,
+  fmtAsse:v => Math.round(v),
+  fmtTooltip:(i,d) => "probabilità " + num(d.serie[i]) + "% · " + num(d.mmOra?.[i],1) + " mm/h"
+});
 
 /* Avvio istantaneo: si parte SUBITO con l'ultima posizione ricordata (o il
    default Follonica) senza aspettare il GPS; il prompt GPS compare solo alla
@@ -1575,6 +1726,7 @@ aggiornaSpiaPosizione();
 caricaDati();
 if (!posSalvata) richiediGPS();  // solo prima visita: se accordato, affina e ricorda
 setInterval(() => { if (!stato.demo) caricaDati(); aggiornaSIR(); }, REFRESH_MINUTI*60*1000);
+setInterval(aggiornaEtaDati, 60*1000);   // spia "dati vecchi" sempre aggiornata
 
 /* ==========================================================================
    NOTA DI VERIFICA PARAMETRI (trasparenza richiesta dal committente)
