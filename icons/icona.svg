@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0F5C99"/>
+  <g id="segno">
+    <rect x="176" y="100" width="22" height="262" rx="11" fill="#FFFFFF"/>
+    <path d="M198 112 H364 Q344 160 364 208 H198 Z" fill="#F0B429"/>
+    <path d="M92 360 q41 -36 82 0 t82 0 t82 0 t82 0" fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M133 424 q41 -36 82 0 t82 0 t82 0" fill="none" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

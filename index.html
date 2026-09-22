@@ -4,495 +4,67 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vedetta — Meteo-mare Follonica</title>
-<meta name="description" content="Vedetta: console meteo-mare per Assistenti Bagnanti. Previsioni orarie 72h Open-Meteo (Forecast + Marine), bandiera calcolata, pannello bagnanti leggibile al sole.">
-<style>
-/* ============================================================================
-   VEDETTA — console meteo-mare per postazione di salvataggio
-   Identità: carta nautica + strumento di bordo.
-   Token a livello di :root; il tema scuro ("guardia notturna") ridefinisce
-   solo i token. Il pannello bagnanti resta SEMPRE chiaro: va letto al sole.
-   ============================================================================ */
-:root{
-  color-scheme: light;
-  /* carta e inchiostro */
-  --carta:#EDF3F3;            /* fondo pagina: carta salsedine, bias verso il mare */
-  --superficie:#FCFEFD;       /* card / superficie grafici */
-  --superficie-2:#F3F8F8;     /* fasce alternate, testate */
-  --inchiostro:#0C2430;       /* inchiostro marino */
-  --inchiostro-2:#44606D;     /* secondario */
-  --inchiostro-3:#7D939E;     /* muto: assi, didascalie */
-  --filo:#D5E0E2;             /* hairline */
-  --filo-forte:#B9CBCF;
-  /* accento = blu carteggio (è anche la serie vento nei grafici) */
-  --accento:#0F5C99;
-  --accento-inchiostro:#FFFFFF;
-  --serie-vento:#0F5C99;      /* validato: contrasto ≥3:1 su --superficie */
-  --serie-onda:#0891B2;       /* validato */
-  --serie-pioggia:#4756C4;    /* validato */
-  --griglia:#E3EBEC;
-  /* semaforo bandiera — semantico, mai usato come accento */
-  --verde:#177245;      --verde-fondo:#DDF2E4;
-  --giallo:#8A5B00;     --giallo-fondo:#FBEFC9;
-  --rosso:#BF2F3A;      --rosso-fondo:#FBE1E1;
-  --ombra:0 1px 2px rgba(12,36,48,.06), 0 6px 24px -12px rgba(12,36,48,.18);
-  --raggio:14px;
-  /* tipografia: condensed di sistema per etichette, mono per letture strumentali */
-  --f-testo:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  --f-etichetta:"Avenir Next Condensed","Arial Narrow","Roboto Condensed","Liberation Sans Narrow",system-ui,sans-serif;
-  --f-strumento:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
-}
-@media (prefers-color-scheme: dark){
-  :root:where(:not([data-theme="light"])){
-    color-scheme: dark;
-    --carta:#081C26;
-    --superficie:#0E2530;
-    --superficie-2:#12303D;
-    --inchiostro:#E4EEF2;
-    --inchiostro-2:#9DB4BE;
-    --inchiostro-3:#6E8894;
-    --filo:#1D3946;
-    --filo-forte:#2C4B59;
-    --accento:#3987E5;
-    --accento-inchiostro:#06121A;
-    --serie-vento:#3987E5;
-    --serie-onda:#1E9CB8;
-    --serie-pioggia:#6E7EE8;
-    --griglia:#16303C;
-    --verde:#4CC98A;   --verde-fondo:#0E3A26;
-    --giallo:#E8B84B;  --giallo-fondo:#3D2F0A;
-    --rosso:#F07882;   --rosso-fondo:#471A20;
-    --ombra:0 1px 2px rgba(0,0,0,.4), 0 8px 28px -14px rgba(0,0,0,.6);
-  }
-}
-:root[data-theme="dark"]{
-  color-scheme: dark;
-  --carta:#081C26; --superficie:#0E2530; --superficie-2:#12303D;
-  --inchiostro:#E4EEF2; --inchiostro-2:#9DB4BE; --inchiostro-3:#6E8894;
-  --filo:#1D3946; --filo-forte:#2C4B59;
-  --accento:#3987E5; --accento-inchiostro:#06121A;
-  --serie-vento:#3987E5; --serie-onda:#1E9CB8; --serie-pioggia:#6E7EE8; --griglia:#16303C;
-  --verde:#4CC98A; --verde-fondo:#0E3A26;
-  --giallo:#E8B84B; --giallo-fondo:#3D2F0A;
-  --rosso:#F07882; --rosso-fondo:#471A20;
-  --ombra:0 1px 2px rgba(0,0,0,.4), 0 8px 28px -14px rgba(0,0,0,.6);
-}
-:root[data-theme="light"]{ color-scheme: light; }
-
-*{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
-body{
-  font-family:var(--f-testo);
-  background:var(--carta);
-  color:var(--inchiostro);
-  line-height:1.5;
-  padding-bottom:3rem;
-}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible{
-  outline:2px solid var(--accento); outline-offset:2px; border-radius:4px;
-}
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{transition:none !important; animation:none !important}
-}
-
-/* ---------- tipi ricorrenti ---------- */
-.occhiello{
-  font-family:var(--f-etichetta);
-  font-size:.72rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--inchiostro-3);
-}
-.lettura{ font-family:var(--f-strumento); font-variant-numeric:tabular-nums; }
-
-/* ============================ TESTATA ============================ */
-header.testata{
-  position:sticky; top:0; z-index:40;
-  background:color-mix(in srgb, var(--carta) 88%, transparent);
-  backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--filo);
-  padding:.6rem .9rem .55rem;
-}
-.testata-riga{display:flex; align-items:center; gap:.6rem; max-width:1040px; margin:0 auto}
-.marchio{display:flex; flex-direction:column; line-height:1.1; margin-right:auto}
-.marchio .nome{
-  font-family:var(--f-etichetta); font-weight:700; font-size:1.15rem;
-  letter-spacing:.2em; text-transform:uppercase;
-}
-.marchio .nome i{font-style:normal; color:var(--accento)}
-.marchio .sotto{font-size:.68rem; color:var(--inchiostro-3); letter-spacing:.04em}
-.bottone{
-  border:1px solid var(--filo-forte); border-radius:9px;
-  padding:.38rem .6rem; font-size:.8rem; font-weight:600;
-  background:var(--superficie);
-  transition:border-color .15s;
-}
-.bottone:hover{border-color:var(--accento)}
-.bottone:active{transform:translateY(1px)}
-.bottone.primario{background:var(--accento); border-color:var(--accento); color:var(--accento-inchiostro)}
-
-.riga-stato{
-  max-width:1040px; margin:.45rem auto 0;
-  display:flex; align-items:center; gap:.55rem; flex-wrap:wrap;
-  font-size:.74rem; color:var(--inchiostro-2);
-}
-.spia{
-  display:inline-flex; align-items:center; gap:.35rem;
-  border:1px solid var(--filo-forte); border-radius:999px;
-  padding:.1rem .6rem .1rem .45rem; font-weight:600; background:var(--superficie);
-}
-.spia::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--verde)}
-.spia.attesa::before{background:var(--inchiostro-3)}
-.spia.avviso{border-color:var(--giallo)}
-.spia.avviso::before{background:var(--giallo)}
-.spia.demo{border-color:var(--rosso); color:var(--rosso)}
-.spia.demo::before{background:var(--rosso)}
-
-/* tab a segmenti */
-.tabs{
-  max-width:1040px; margin:.6rem auto 0;
-  display:flex; border:1px solid var(--filo-forte); border-radius:11px;
-  background:var(--superficie); padding:3px; gap:3px;
-}
-.tabs button{
-  flex:1; padding:.5rem .4rem; border-radius:8px;
-  font-family:var(--f-etichetta); font-weight:700; letter-spacing:.12em;
-  text-transform:uppercase; font-size:.78rem; color:var(--inchiostro-2);
-}
-.tabs button[aria-selected="true"]{background:var(--accento); color:var(--accento-inchiostro)}
-
-main{max-width:1040px; margin:0 auto; padding:.9rem .7rem 0}
-
-/* ============================ AVVISI ============================ */
-.avviso-rete{
-  display:none; border:1px solid var(--rosso); background:var(--rosso-fondo);
-  color:var(--rosso); border-radius:var(--raggio); padding:.75rem .9rem;
-  margin-bottom:.9rem; font-size:.86rem;
-}
-.avviso-rete.visibile{display:block}
-.avviso-rete .azioni{display:flex; gap:.5rem; margin-top:.55rem; flex-wrap:wrap}
-.avviso-rete .bottone{border-color:var(--rosso); color:var(--rosso); background:transparent}
-#caricamento{display:none; text-align:center; padding:1.1rem; color:var(--inchiostro-2); font-size:.85rem}
-#caricamento.visibile{display:block}
-.spinner{
-  display:inline-block; width:18px; height:18px; border:2.5px solid var(--filo-forte);
-  border-top-color:var(--accento); border-radius:50%; animation:gira .9s linear infinite;
-  vertical-align:-4px; margin-right:.5rem;
-}
-@keyframes gira{to{transform:rotate(360deg)}}
-
-/* fascia demo — non deve poter passare inosservata */
-.fascia-demo{
-  display:none; margin-bottom:.9rem; border-radius:var(--raggio);
-  border:1.5px dashed var(--rosso); color:var(--rosso); background:var(--rosso-fondo);
-  padding:.55rem .8rem; font-size:.8rem; font-weight:700;
-  font-family:var(--f-etichetta); letter-spacing:.06em; text-transform:uppercase;
-  text-align:center;
-}
-:root[data-demo] .fascia-demo{display:block}
-
-/* ============================ CARD ============================ */
-section.card{
-  background:var(--superficie); border:1px solid var(--filo);
-  border-radius:var(--raggio); box-shadow:var(--ombra);
-  padding:.9rem; margin-bottom:1rem;
-}
-.card-testa{display:flex; align-items:baseline; gap:.6rem; margin-bottom:.7rem; flex-wrap:wrap}
-.card-testa h2{
-  font-family:var(--f-etichetta); font-size:.85rem; font-weight:700;
-  letter-spacing:.13em; text-transform:uppercase;
-}
-.card-testa .dida{font-size:.72rem; color:var(--inchiostro-3); margin-left:auto}
-.nota{font-size:.74rem; color:var(--inchiostro-2)}
-
-/* ==================== STRISCIA "ADESSO" ==================== */
-.adesso{display:grid; grid-template-columns:auto 1fr; gap:0; overflow:hidden; padding:0}
-.bandiera-costola{
-  writing-mode:vertical-rl; transform:rotate(180deg);
-  display:flex; align-items:center; justify-content:center; gap:.4rem;
-  padding:.9rem .5rem; min-width:44px;
-  font-family:var(--f-etichetta); font-weight:700; font-size:.8rem;
-  letter-spacing:.22em; text-transform:uppercase;
-}
-.bandiera-costola.verde{background:var(--verde-fondo); color:var(--verde)}
-.bandiera-costola.gialla{background:var(--giallo-fondo); color:var(--giallo)}
-.bandiera-costola.rossa{background:var(--rosso-fondo); color:var(--rosso)}
-.strumenti{
-  display:grid; grid-template-columns:repeat(2,1fr); gap:1px;
-  background:var(--filo);
-}
-@media(min-width:640px){.strumenti{grid-template-columns:repeat(3,1fr)}}
-@media(min-width:900px){.strumenti{grid-template-columns:repeat(6,1fr)}}
-.strumento{background:var(--superficie); padding:.65rem .75rem .6rem; min-width:0}
-.strumento .occhiello{display:block; margin-bottom:.15rem}
-.strumento .valore{
-  font-family:var(--f-strumento); font-variant-numeric:tabular-nums;
-  font-size:1.45rem; font-weight:700; letter-spacing:-.01em; white-space:nowrap;
-}
-.strumento .valore small{font-size:.72rem; font-weight:500; color:var(--inchiostro-2); letter-spacing:0}
-.strumento .sotto{font-size:.7rem; color:var(--inchiostro-2); margin-top:.1rem; line-height:1.3}
-.freccia-nav{
-  display:inline-block; font-size:1.05rem; line-height:1; color:var(--accento);
-  vertical-align:-2px;
-}
-.uv-tacca{display:inline-block; width:.6em; height:.6em; border-radius:3px; margin-right:.3em; vertical-align:baseline}
-
-/* ==================== GRAFICI ==================== */
-.grafico-blocco{position:relative; margin-top:.4rem}
-.grafico-blocco + .grafico-blocco{margin-top:1.1rem}
-.grafico-testa{display:flex; align-items:baseline; gap:.6rem; flex-wrap:wrap}
-.grafico-testa h3{
-  font-family:var(--f-etichetta); font-size:.78rem; font-weight:700;
-  letter-spacing:.12em; text-transform:uppercase; color:var(--inchiostro-2);
-}
-.legenda{display:flex; gap:.9rem; margin-left:auto; font-size:.7rem; color:var(--inchiostro-2)}
-.legenda span{display:inline-flex; align-items:center; gap:.32rem}
-.leg-linea{width:16px; height:0; border-top:2.5px solid var(--serie-vento); display:inline-block}
-.leg-banda{width:14px; height:9px; background:color-mix(in srgb, var(--serie-vento) 22%, transparent); border-radius:2px; display:inline-block}
-.leg-area{width:14px; height:9px; background:color-mix(in srgb, var(--serie-onda) 22%, transparent); border-bottom:2.5px solid var(--serie-onda); display:inline-block}
-.tela-avvolgi{position:relative; margin-top:.35rem; touch-action:pan-y}
-canvas.tela{display:block; width:100%; height:130px}
-.tooltip-grafico{
-  position:absolute; pointer-events:none; display:none; z-index:5;
-  background:var(--inchiostro); color:var(--carta);
-  border-radius:8px; padding:.35rem .55rem; font-size:.72rem; line-height:1.35;
-  font-family:var(--f-strumento); font-variant-numeric:tabular-nums;
-  white-space:nowrap; box-shadow:var(--ombra);
-}
-.tooltip-grafico .tt-ora{font-weight:700}
-
-/* ==================== PROSSIME ORE ==================== */
-.prossime-ore{display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem}
-@media(min-width:600px){.prossime-ore{grid-template-columns:repeat(6,1fr)}}
-.ora-card{
-  border:1px solid var(--filo); border-radius:10px;
-  background:var(--superficie-2);
-  padding:.5rem .35rem; text-align:center; font-size:.74rem; color:var(--inchiostro-2);
-}
-.ora-card .h{
-  font-family:var(--f-etichetta); font-weight:700; font-size:.8rem;
-  letter-spacing:.1em; color:var(--inchiostro);
-}
-.ora-card .t{font-family:var(--f-strumento); font-variant-numeric:tabular-nums; font-size:1.15rem; font-weight:700; color:var(--inchiostro); margin:.05rem 0}
-.ora-card .vr{white-space:nowrap}
-.ora-card .on{color:var(--serie-onda); font-weight:600}
-
-/* ==================== TABELLA 72H ==================== */
-.scroll-tabella{overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--filo); border-radius:10px}
-table{border-collapse:collapse; width:100%; min-width:780px; font-size:.78rem}
-thead th{
-  position:sticky; top:0; z-index:5; background:var(--superficie-2);
-  font-family:var(--f-etichetta); font-weight:700; font-size:.66rem;
-  letter-spacing:.1em; text-transform:uppercase; color:var(--inchiostro-3);
-  padding:.5rem .45rem; text-align:right; white-space:nowrap;
-  border-bottom:1.5px solid var(--filo-forte);
-}
-thead th:first-child{text-align:left}
-tbody td{
-  padding:.34rem .45rem; text-align:right; white-space:nowrap;
-  border-bottom:1px solid var(--filo);
-  font-variant-numeric:tabular-nums; font-family:var(--f-strumento); font-size:.76rem;
-}
-tbody td:first-child{text-align:left; font-family:var(--f-etichetta); font-weight:700; letter-spacing:.06em}
-tr.riga-giorno td{
-  background:var(--superficie-2); color:var(--inchiostro-2);
-  font-family:var(--f-etichetta); font-weight:700; letter-spacing:.12em;
-  text-transform:uppercase; font-size:.7rem; text-align:left; padding:.4rem .6rem;
-}
-tr.riga-attuale td{background:color-mix(in srgb, var(--accento) 9%, var(--superficie))}
-td .freccia-nav{color:var(--inchiostro-2); font-size:.95rem}
-.trend{font-weight:700}
-.trend.su{color:var(--verde)} .trend.giu{color:var(--rosso)} .trend.stab{color:var(--inchiostro-3)}
-.uv-chip{
-  display:inline-block; min-width:2.1em; text-align:center; border-radius:6px;
-  padding:0 .25em; font-weight:700; font-size:.72rem; color:#fff;
-}
-
-/* ==================== MODULI OPZIONALI ==================== */
-details.modulo{
-  border:1px solid var(--filo); border-radius:var(--raggio);
-  background:var(--superficie); padding:.7rem .85rem; margin-bottom:.8rem;
-}
-details.modulo summary{
-  cursor:pointer; font-family:var(--f-etichetta); font-weight:700;
-  font-size:.76rem; letter-spacing:.11em; text-transform:uppercase; color:var(--inchiostro-2);
-  list-style:none; display:flex; align-items:center; gap:.5rem;
-}
-details.modulo summary::before{content:"+"; font-size:1rem; color:var(--accento); font-family:var(--f-strumento)}
-details[open].modulo summary::before{content:"–"}
-details.modulo .corpo{margin-top:.6rem; font-size:.8rem; color:var(--inchiostro-2)}
-details.modulo a{color:var(--accento)}
-details.modulo input[type=text], details.modulo input[type=password]{
-  font:inherit; width:100%; padding:.45rem .55rem; margin:.3rem 0;
-  border:1px solid var(--filo-forte); border-radius:8px;
-  background:var(--superficie-2); color:var(--inchiostro);
-}
-.interruttore{display:flex; align-items:center; gap:.45rem; margin:.35rem 0; font-weight:600; color:var(--inchiostro)}
-
-/* ==================== PANNELLO BAGNANTI ====================
-   Sempre in chiaro, qualunque tema: si legge sotto il sole.  */
-#vista-bagnanti{display:none}
-#vista-bagnanti.attiva{display:block}
-#vista-tecnica.nascosta{display:none}
-.pannello-pubblico{
-  color-scheme:light;
-  background:#FFFFFF; color:#12242E;
-  border-radius:var(--raggio); overflow:hidden;
-  border:1px solid var(--filo); box-shadow:var(--ombra);
-  text-align:center;
-}
-.pp-bandiera{padding:1.6rem 1rem 1.4rem}
-.pp-bandiera .drappo{
-  width:76px; height:52px; margin:0 auto .7rem; border-radius:6px 10px 10px 6px;
-  clip-path:polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%);
-  box-shadow:0 3px 10px rgba(0,0,0,.18);
-}
-.pp-bandiera .nome{
-  font-family:var(--f-etichetta); font-weight:800; letter-spacing:.14em;
-  text-transform:uppercase; font-size:clamp(1.7rem, 7vw, 2.6rem); line-height:1.05;
-}
-.pp-bandiera .significato{font-size:clamp(1rem, 3.6vw, 1.3rem); font-weight:700; margin-top:.4rem}
-.pp-bandiera.verde{background:#E2F5E8; color:#0E5C33}
-.pp-bandiera.verde .drappo{background:#1B9A55}
-.pp-bandiera.gialla{background:#FCF1CB; color:#7A5000}
-.pp-bandiera.gialla .drappo{background:#F0B429}
-.pp-bandiera.rossa{background:#FBE3E3; color:#9E2530}
-.pp-bandiera.rossa .drappo{background:#D1343F}
-.pp-griglia{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:#DCE6E9}
-.pp-griglia>div{background:#fff; padding:1.05rem .5rem .95rem}
-.pp-griglia .occhiello{color:#5E7683}
-.pp-griglia .valore{
-  font-family:var(--f-strumento); font-variant-numeric:tabular-nums;
-  font-size:clamp(1.9rem, 8vw, 2.7rem); font-weight:800; line-height:1.1;
-}
-.pp-griglia .extra{font-size:.86rem; margin-top:.2rem; font-weight:600; color:#3E5866}
-.pp-vento{
-  padding:1.05rem .9rem; font-size:clamp(1.05rem, 4.2vw, 1.4rem); font-weight:800;
-  border-top:1px solid #DCE6E9;
-}
-.pp-piede{
-  padding:.6rem .9rem .7rem; font-size:.7rem; color:#5E7683; border-top:1px solid #DCE6E9;
-}
-:root[data-demo] .pp-piede::before{
-  content:"⚠ DATI DIMOSTRATIVI — NON REALI"; display:block;
-  color:#9E2530; font-weight:800; letter-spacing:.1em; margin-bottom:.25rem;
-}
-
-/* ==================== ALLERTA TEMPORALE ==================== */
-.allerta-temporale{
-  border:2px solid var(--rosso); background:var(--rosso-fondo); color:var(--rosso);
-  border-radius:var(--raggio); padding:.7rem .9rem; margin-bottom:.9rem;
-  font-weight:800; font-size:.95rem; text-align:center;
-}
-.allerta-temporale small{display:block; font-weight:600; font-size:.76rem; margin-top:.2rem}
-
-/* spia dati vecchi */
-.stantio{color:var(--rosso); font-weight:800}
-
-/* barre pioggia (pannello bagnino, palette fissa chiara, rampa monocroma blu) */
-.pp-barre .b.pb0{background:#C9DCEA}
-.pp-barre .b.pb1{background:#4E97CE}
-.pp-barre .b.pb2{background:#12557F}
-
-/* ============= VENTO DEL GIORNO (pannello bagnino) ============= */
-.pp-vento-giorno{padding:.9rem .9rem 1rem; border-top:1px solid #DCE6E9}
-.pp-barre{display:flex; align-items:flex-end; gap:3px; height:64px; margin:.55rem .2rem .15rem}
-.pp-barre .b{flex:1; border-radius:3px 3px 0 0; min-height:3px; background:#CBD9DE}
-.pp-barre .b.verde{background:#1B9A55}
-.pp-barre .b.gialla{background:#F0B429}
-.pp-barre .b.rossa{background:#D1343F}
-.pp-barre .b.ora{outline:2.5px solid #12242E; outline-offset:1px}
-.pp-ore{display:flex; gap:3px; margin:0 .2rem}
-.pp-ore span{flex:1; font-size:.62rem; color:#5E7683; font-family:var(--f-strumento); text-align:center}
-#pp-vento-sintesi{font-size:1rem; font-weight:700; color:#12242E; margin-top:.55rem}
-
-/* ==================== RADAR PIOGGIA + SECONDA OPINIONE ==================== */
-.radar-avvolgi{
-  border:1px solid var(--filo); border-radius:10px; overflow:hidden;
-  height:min(62vw, 420px); background:var(--superficie-2);
-}
-.radar-avvolgi iframe{width:100%; height:100%; border:0; display:block}
-.fonti-chips{display:flex; flex-wrap:wrap; gap:.5rem}
-.fonti-chips a{
-  flex:1 1 40%; min-width:130px; text-align:center; text-decoration:none;
-  border:1.5px solid var(--filo-forte); border-radius:10px; padding:.6rem .5rem;
-  font-weight:700; font-size:.86rem; color:var(--inchiostro); background:var(--superficie-2);
-}
-.fonti-chips a:hover{border-color:var(--accento); color:var(--accento)}
-.fonti-chips a small{display:block; font-weight:500; font-size:.68rem; color:var(--inchiostro-3)}
-
-/* ==================== DIALOG POSIZIONE ==================== */
-.chips-pos{display:flex; gap:.5rem; margin-bottom:.7rem}
-.chip{flex:1; border:1.5px solid var(--filo-forte); border-radius:10px; padding:.6rem .5rem;
-  font-weight:700; font-size:.86rem; background:var(--superficie-2); text-align:center}
-.chip:hover{border-color:var(--accento)}
-details.coord-avanzate{margin-top:.6rem}
-details.coord-avanzate summary{cursor:pointer; font-size:.76rem; font-weight:700; color:var(--inchiostro-2)}
-dialog{
-  border:1px solid var(--filo-forte); border-radius:var(--raggio);
-  background:var(--superficie); color:var(--inchiostro);
-  padding:1.1rem; max-width:430px; width:92vw;
-  box-shadow:0 14px 50px rgba(0,0,0,.35);
-}
-dialog::backdrop{background:rgba(6,18,26,.55)}
-dialog h3{
-  font-family:var(--f-etichetta); font-size:.9rem; font-weight:700;
-  letter-spacing:.13em; text-transform:uppercase; margin-bottom:.7rem;
-}
-dialog label{font-size:.74rem; font-weight:700; display:block; margin-top:.55rem; color:var(--inchiostro-2)}
-dialog input{
-  font:inherit; width:100%; padding:.5rem .6rem; margin-top:.15rem;
-  border:1px solid var(--filo-forte); border-radius:8px;
-  background:var(--superficie-2); color:var(--inchiostro);
-}
-dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1rem}
-#risultati-ricerca{list-style:none; margin-top:.35rem; max-height:10rem; overflow-y:auto}
-#risultati-ricerca li{
-  padding:.42rem .35rem; border-bottom:1px solid var(--filo); cursor:pointer; font-size:.83rem;
-}
-#risultati-ricerca li:hover{background:var(--superficie-2)}
-
-.fonti{max-width:1040px; margin:0 auto; padding:0 .8rem; font-size:.68rem; color:var(--inchiostro-3)}
-</style>
+<meta name="description" content="Vedetta: console meteo-mare per Assistenti Bagnanti. Bandiera calcolata, vento, onde, pioggia, allerta temporale e radar, anche senza rete.">
+<meta name="theme-color" content="#EDF3F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#081C26" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vedetta">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icona.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icona-180.png">
+<link rel="stylesheet" href="css/vedetta.css">
 </head>
-<body>
+<body data-stato="vuoto">
 
 <header class="testata">
   <div class="testata-riga">
     <div class="marchio">
       <span class="nome">Vedet<i>ta</i></span>
-      <span class="sotto">console meteo-mare · <span id="nome-luogo">Follonica</span></span>
+      <span class="sotto" id="ultimo-agg">in attesa dei dati…</span>
     </div>
-    <button class="bottone" id="btn-tema" title="Tema chiaro/scuro" aria-label="Cambia tema">◐</button>
-    <button class="bottone" id="btn-posizione">Posizione</button>
-    <button class="bottone primario" id="btn-aggiorna">Aggiorna</button>
+    <button class="chip-luogo" id="btn-posizione" aria-label="Cambia posizione">
+      <svg class="icona" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      <span id="nome-luogo">Follonica</span>
+    </button>
+    <button class="bottone-icona" id="btn-aggiorna" aria-label="Aggiorna i dati">
+      <svg class="icona" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>
+    </button>
   </div>
-  <div class="riga-stato">
-    <span id="spia-posizione" class="spia attesa">in attesa di posizione…</span>
-    <span id="spia-dati" class="spia attesa">dati: —</span>
-    <span id="ultimo-agg">aggiornato: —</span>
-  </div>
-  <nav class="tabs" role="tablist" aria-label="Viste">
-    <button id="tab-tecnica" role="tab" aria-selected="true">Tecnica</button>
-    <button id="tab-bagnanti" role="tab" aria-selected="false">Bagnino</button>
-  </nav>
 </header>
 
+<nav class="barra-viste" role="tablist" aria-label="Viste">
+  <button role="tab" id="tab-previsione" data-vista="previsione" aria-controls="vista-previsione" aria-selected="true">
+    <span class="pillola"><svg class="icona" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="M4 15l4.5-5 4 3L19 6"/></svg></span>
+    Previsione
+  </button>
+  <button role="tab" id="tab-bagnino" data-vista="bagnino" aria-controls="vista-bagnino" aria-selected="false" tabindex="-1">
+    <span class="pillola"><svg class="icona" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4h11l-2.5 4L17 12H6"/></svg></span>
+    Bagnino
+  </button>
+  <button role="tab" id="tab-radar" data-vista="radar" aria-controls="vista-radar" aria-selected="false" tabindex="-1">
+    <span class="pillola"><svg class="icona" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l5.5-5.5"/></svg></span>
+    Radar
+  </button>
+</nav>
+
 <main>
-  <div class="fascia-demo" role="alert">Modalità dimostrativa — dati sintetici, non reali</div>
-  <div id="allerta-temporale" class="allerta-temporale" role="alert" hidden></div>
-
-  <div id="avviso-rete" class="avviso-rete" role="alert">
-    <div id="testo-errore"></div>
-    <div class="azioni">
-      <button class="bottone" id="btn-riprova">Riprova adesso</button>
-      <button class="bottone" id="btn-demo">Mostra interfaccia con dati dimostrativi</button>
-    </div>
+  <div id="avviso-posizione" class="avviso giallo" hidden>
+    <div id="testo-avviso-posizione">Posizione di default: Follonica. Verifica le coordinate esatte dello stabilimento.</div>
+    <button class="bottone" id="btn-imposta-posizione">Imposta</button>
   </div>
-  <div id="caricamento"><span class="spinner"></span>Interrogo Open-Meteo…</div>
+  <div id="allerta-temporale" class="allerta-temporale" role="alert" hidden></div>
+  <div id="avviso-rete" class="avviso" role="status" hidden>
+    <div id="testo-avviso-rete"></div>
+    <button class="bottone" id="btn-riprova">Riprova</button>
+  </div>
+  <div id="caricamento" hidden><span class="spinner"></span>Interrogo Open-Meteo…</div>
 
-  <!-- ======================= VISTA TECNICA ======================= -->
-  <section id="vista-tecnica">
+  <!-- ======================= PREVISIONE ======================= -->
+  <section id="vista-previsione" class="vista" role="tabpanel" aria-labelledby="tab-previsione">
 
-    <section class="card adesso" id="card-adesso" hidden>
+    <section class="card adesso richiede-dati" aria-label="Condizioni attuali">
       <div class="bandiera-costola gialla" id="costola-bandiera">bandiera</div>
       <div class="strumenti">
         <div class="strumento">
@@ -501,19 +73,19 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
           <div class="sotto" id="ad-vento-desc">—</div>
         </div>
         <div class="strumento">
-          <span class="occhiello">Raffica</span>
-          <span class="valore" id="ad-raffica">—</span>
-          <div class="sotto">massima sull'ora</div>
-        </div>
-        <div class="strumento">
           <span class="occhiello">Onda</span>
           <span class="valore" id="ad-onda">—</span>
           <div class="sotto" id="ad-onda-desc">—</div>
         </div>
         <div class="strumento">
-          <span class="occhiello">Aria / percepita</span>
+          <span class="occhiello">Aria</span>
           <span class="valore" id="ad-aria">—</span>
-          <div class="sotto" id="ad-mare-riga">mare: —</div>
+          <div class="sotto" id="ad-aria-desc">—</div>
+        </div>
+        <div class="strumento">
+          <span class="occhiello">Mare</span>
+          <span class="valore" id="ad-mare">—</span>
+          <div class="sotto">temperatura superficiale</div>
         </div>
         <div class="strumento">
           <span class="occhiello">Pressione</span>
@@ -528,7 +100,12 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
       </div>
     </section>
 
-    <section class="card" id="card-grafici" hidden>
+    <section class="card richiede-dati">
+      <div class="card-testa"><h2>Prossime 6 ore</h2></div>
+      <div id="prossime-ore" class="prossime-ore"></div>
+    </section>
+
+    <section class="card richiede-dati">
       <div class="card-testa">
         <h2>Andamento 48 ore</h2>
         <span class="dida">tratteggi: soglie bandiera gialla e rossa</span>
@@ -541,7 +118,7 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
             <span><span class="leg-banda"></span>raffica</span>
           </div>
         </div>
-        <div class="tela-avvolgi" id="avv-vento">
+        <div class="tela-avvolgi">
           <canvas class="tela" id="tela-vento" aria-hidden="true"></canvas>
           <div class="tooltip-grafico" id="tt-vento"></div>
         </div>
@@ -553,7 +130,7 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
             <span><span class="leg-area"></span>altezza significativa</span>
           </div>
         </div>
-        <div class="tela-avvolgi" id="avv-onda">
+        <div class="tela-avvolgi">
           <canvas class="tela" id="tela-onda" aria-hidden="true"></canvas>
           <div class="tooltip-grafico" id="tt-onda"></div>
         </div>
@@ -562,55 +139,18 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
         <div class="grafico-testa">
           <h3>Pioggia · probabilità %</h3>
           <div class="legenda" aria-hidden="true">
-            <span><span class="leg-area" style="background:color-mix(in srgb, var(--serie-pioggia) 22%, transparent); border-bottom-color:var(--serie-pioggia)"></span>probabilità (mm nel dettaglio al tocco)</span>
+            <span><span class="leg-area pioggia"></span>mm al tocco</span>
           </div>
         </div>
-        <div class="tela-avvolgi" id="avv-pioggia">
+        <div class="tela-avvolgi">
           <canvas class="tela" id="tela-pioggia" aria-hidden="true"></canvas>
           <div class="tooltip-grafico" id="tt-pioggia"></div>
         </div>
       </div>
-      <p class="nota" style="margin-top:.6rem">I valori numerici completi sono nella tabella qui sotto.</p>
     </section>
 
-    <section class="card" id="card-radar" hidden>
-      <div class="card-testa">
-        <h2>Radar pioggia</h2>
-        <span class="dida">osservato + tendenza a breve · trascina e zooma</span>
-      </div>
-      <div class="radar-avvolgi">
-        <iframe id="radar-frame" title="Radar pioggia (RainViewer)" loading="lazy" allowfullscreen></iframe>
-      </div>
-      <p class="nota" style="margin-top:.5rem">
-        Radar meteorologico RainViewer: pioggia realmente osservata negli ultimi minuti e
-        proiezione a brevissimo termine — per la pioggia imminente è più affidabile di
-        qualsiasi modello di previsione. Premi ▶ sulla mappa per animare i fotogrammi.
-      </p>
-    </section>
-
-    <section class="card" id="card-fonti">
-      <div class="card-testa">
-        <h2>Seconda opinione</h2>
-        <span class="dida">si apre il sito della fonte, già sulla zona</span>
-      </div>
-      <div class="fonti-chips" id="fonti-chips"></div>
-      <p class="nota" style="margin-top:.55rem">
-        3BMeteo e IlMeteo non offrono API pubbliche leggibili da questa pagina, quindi un
-        confronto numerico qui dentro non è tecnicamente possibile in modo lecito: il tocco
-        apre direttamente la loro previsione, così il confronto lo fai sulla fonte originale.
-      </p>
-    </section>
-
-    <section class="card" id="card-prossime" hidden>
-      <div class="card-testa"><h2>Prossime 6 ore</h2><span class="dida">sempre in evidenza</span></div>
-      <div id="prossime-ore" class="prossime-ore"></div>
-    </section>
-
-    <section class="card" id="card-tabella" hidden>
-      <div class="card-testa">
-        <h2>Registro orario · 72 ore</h2>
-        <span class="dida">scorri lateralmente</span>
-      </div>
+    <details class="card registro richiede-dati">
+      <summary>Registro orario · 72 ore</summary>
       <div class="scroll-tabella">
         <table id="tabella-72h">
           <thead>
@@ -625,47 +165,37 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
           <tbody id="corpo-tabella"></tbody>
         </table>
       </div>
-      <p class="nota" style="margin-top:.55rem">
-        Atmosfera: Open-Meteo Forecast, modello «best_match» (per l'Italia: ECMWF IFS + DWD ICON,
-        con GFS a riempimento). Mare: Open-Meteo Marine (Météo-France MFWAM / ECMWF WAM).
-      </p>
+    </details>
+
+    <section class="card">
+      <div class="card-testa">
+        <h2>Seconda opinione</h2>
+        <span class="dida">apre la previsione della fonte, già sulla zona</span>
+      </div>
+      <div class="fonti-chips" id="fonti-chips"></div>
     </section>
 
-    <details class="modulo" id="modulo-sir">
-      <summary>Stazione SIR Toscana — osservato non validato</summary>
-      <div class="corpo">
-        <label class="interruttore"><input type="checkbox" id="sir-attivo"> Attiva confronto</label>
-        <p>I dati SIR (sir.toscana.it) sono <strong>osservazioni in tempo reale non validate</strong>:
-        solo per confronto, mai come previsione. Il portale non espone JSON con CORS aperto:
-        configura un tuo proxy nella costante <code>SIR_CONFIG.urlJson</code> in cima allo script.</p>
-        <div id="sir-esito" style="margin-top:.4rem"></div>
-      </div>
-    </details>
-
-    <details class="modulo" id="modulo-comparativo">
-      <summary>Fonte comparativa opzionale — API key propria</summary>
-      <div class="corpo">
-        <p>Windy (free tier con dati fittizi) e Meteomatics/Tomorrow.io (free a termine, chiave
-        esposta lato client) non sono dipendenze. Con una chiave tua, la pagina fa una lettura
-        comparativa dall'endpoint realtime di Tomorrow.io; la chiave resta solo in memoria di sessione.</p>
-        <label class="interruttore"><input type="checkbox" id="comp-attivo"> Attiva</label>
-        <input type="password" id="comp-chiave" placeholder="API key Tomorrow.io (opzionale)" autocomplete="off">
-        <button class="bottone" id="comp-test">Confronta ora</button>
-        <div id="comp-esito" style="margin-top:.4rem"></div>
-      </div>
-    </details>
+    <p class="fonti">
+      Atmosfera: Open-Meteo Forecast, modello «best_match» (per l'Italia ECMWF IFS + DWD ICON,
+      GFS a riempimento). Mare: Open-Meteo Marine (Météo-France MFWAM / ECMWF WAM).
+      Licenza CC BY 4.0.
+    </p>
   </section>
 
-  <!-- ======================= VISTA BAGNANTI ======================= -->
-  <section id="vista-bagnanti">
-    <div class="pannello-pubblico">
+  <!-- ======================= BAGNINO ======================= -->
+  <section id="vista-bagnino" class="vista" role="tabpanel" aria-labelledby="tab-bagnino" hidden>
+    <div class="pannello-pubblico richiede-dati">
       <div id="pp-bandiera" class="pp-bandiera gialla">
         <div class="drappo" aria-hidden="true"></div>
         <div class="nome" id="pp-nome">—</div>
-        <div class="significato" id="pp-significato">in attesa dei dati…</div>
+        <div class="significato" id="pp-significato">—</div>
       </div>
       <div class="pp-griglia">
-        <div><span class="occhiello">Aria</span><div class="valore" id="pp-temp">—</div></div>
+        <div>
+          <span class="occhiello">Aria</span>
+          <div class="valore" id="pp-temp">—</div>
+          <div class="extra" id="pp-cielo"></div>
+        </div>
         <div><span class="occhiello">Mare</span><div class="valore" id="pp-mare">—</div></div>
         <div>
           <span class="occhiello">Sole / UV</span>
@@ -679,39 +209,51 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
         </div>
       </div>
       <div class="pp-vento" id="pp-vento">—</div>
-      <div class="pp-vento-giorno">
+      <div class="pp-giornata">
         <span class="occhiello" id="pp-vento-titolo">Vento nella giornata (6–21)</span>
         <div class="pp-barre" id="pp-vento-barre" aria-hidden="true"></div>
         <div class="pp-ore" id="pp-vento-ore" aria-hidden="true"></div>
-        <div id="pp-vento-sintesi">—</div>
+        <div class="pp-sintesi" id="pp-vento-sintesi"></div>
       </div>
-      <div class="pp-vento-giorno">
+      <div class="pp-giornata">
         <span class="occhiello" id="pp-pioggia-titolo">Pioggia nella giornata (6–21)</span>
         <div class="pp-barre" id="pp-pioggia-barre" aria-hidden="true"></div>
         <div class="pp-ore" id="pp-pioggia-ore" aria-hidden="true"></div>
-        <div id="pp-pioggia-sintesi">—</div>
+        <div class="pp-sintesi" id="pp-pioggia-sintesi"></div>
       </div>
       <div class="pp-piede">
         Bandiera calcolata da vento e onda (scale Beaufort / Douglas).
         La decisione finale spetta all'Assistente Bagnanti in servizio.
-        Aggiornato <span id="pp-agg">—</span>.
+        Dati delle <span id="pp-agg">—</span>.
       </div>
     </div>
   </section>
+
+  <!-- ======================= RADAR ======================= -->
+  <section id="vista-radar" class="vista vista-radar" role="tabpanel" aria-labelledby="tab-radar" hidden>
+    <div class="radar-avvolgi">
+      <iframe id="radar-frame" title="Radar pioggia RainViewer" allowfullscreen></iframe>
+      <div class="radar-vuoto" id="radar-offline" hidden>Radar non disponibile senza rete.<br>Torna qui appena il telefono ha di nuovo segnale.</div>
+    </div>
+    <p class="nota">
+      Radar meteorologico RainViewer: pioggia realmente osservata negli ultimi minuti e tendenza a
+      brevissimo termine. Per capire se un fronte arriva o passa al largo è più affidabile di
+      qualsiasi previsione. Premi ▶ sulla mappa per animarlo.
+    </p>
+  </section>
 </main>
 
-<p class="fonti">
-  Dati: Open-Meteo Forecast API e Marine Weather API (licenza CC BY 4.0, nessuna chiave).
-  Geocoding: geocoding-api.open-meteo.com.
-</p>
-
-<dialog id="dlg-posizione">
-  <h3>Imposta posizione</h3>
+<dialog id="dlg-posizione" aria-labelledby="dlg-titolo">
+  <h3 id="dlg-titolo">Posizione</h3>
+  <p class="dlg-coord" id="dlg-coord"></p>
   <div class="chips-pos">
-    <button class="chip" id="chip-gps">📍 Usa GPS</button>
+    <button class="chip" id="chip-gps">
+      <svg class="icona" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      Usa GPS
+    </button>
     <button class="chip" id="chip-follonica">Follonica</button>
   </div>
-  <label for="cerca-luogo">Oppure cerca un luogo (si applica al tocco)</label>
+  <label for="cerca-luogo">Oppure cerca un luogo</label>
   <input type="text" id="cerca-luogo" placeholder="es. Punta Ala, Castiglione…" autocomplete="off">
   <ul id="risultati-ricerca"></ul>
   <details class="coord-avanzate">
@@ -725,1026 +267,11 @@ dialog .azioni{display:flex; gap:.5rem; justify-content:flex-end; margin-top:1re
     </div>
   </details>
   <div class="azioni">
-    <button class="bottone" id="dlg-annulla">Chiudi</button>
+    <button class="bottone" id="dlg-chiudi">Chiudi</button>
   </div>
 </dialog>
 
-<script>
-"use strict";
-/* ==========================================================================
-   COSTANTI OPERATIVE — tutte le soglie stanno QUI, non dentro la logica
-   ========================================================================== */
-const POSIZIONE_DEFAULT = { lat: 42.92, lon: 10.76, nome: "Follonica" };
-const REFRESH_MINUTI    = 12;          // auto-refresh (richiesto 10–15 min)
-const RETRY_TENTATIVI   = 3;           // dopo il primo giro fallito
-const RETRY_BASE_MS     = 2000;        // 2s, 4s, 8s
-
-/* Soglie bandiera — Beaufort (vento) e Douglas (mare).
-   VERDE: vento E onda sotto le soglie verdi (Beaufort ≤3, Douglas ≤2).
-   ROSSA: vento O raffica O onda oltre le soglie rosse (Beaufort ≥6, Douglas ≥4).
-   GIALLA: tutto il resto. Adatta i numeri all'ordinanza della Capitaneria
-   competente (Portoferraio per il litorale di Follonica). */
-const BANDIERA_SOGLIE = {
-  VENTO_VERDE_KMH: 20, VENTO_ROSSO_KMH: 39, RAFFICA_ROSSA_KMH: 55,
-  ONDA_VERDE_M: 0.5,   ONDA_ROSSA_M: 1.25
-};
-const PRESSIONE_DELTA_HPA = 1.0;   // variazione su 3h per dire salita/calo
-const PRESSIONE_ORE_CONFRONTO = 3;
-const ORE_GRAFICO = 48;            // finestra dei grafici
-
-/* Pioggia e temporali */
-const PIOGGIA_SOGLIE = { BASSA: 20, ALTA: 50 };   // % probabilità: colori barre e sintesi
-const TEMPORALE_CODICI = [95, 96, 99];            // weather_code WMO: temporale (anche con grandine)
-const ORE_ALLERTA_TEMPORALE = 12;                 // finestra di preavviso
-const DATI_VECCHI_MINUTI = 20;                    // oltre: spia "dati vecchi"
-
-const SIR_CONFIG = {
-  urlJson: "",   // JSON tipo {"stazione":"…","vento_kmh":..,"temperatura":..,"ora":"…"} via proxy proprio
-  portale: "https://www.sir.toscana.it/monitoraggio/stazioni.php"
-};
-
-/* ==========================================================================
-   FONTI — Open-Meteo, nomenclatura attuale (snake_case, post-2023)
-   Forecast: best_match = per l'Italia ECMWF IFS + DWD ICON (+GFS).
-   Marine:   best_match marino = Météo-France MFWAM / ECMWF WAM;
-             sea_surface_temperature può essere null molto sotto costa.
-   ========================================================================== */
-const PARAM_FORECAST_HOURLY = ["temperature_2m","apparent_temperature","pressure_msl",
-  "surface_pressure","wind_speed_10m","wind_direction_10m","wind_gusts_10m","cloud_cover",
-  "precipitation_probability","precipitation","uv_index","weather_code"].join(",");
-const PARAM_FORECAST_CURRENT = ["temperature_2m","apparent_temperature","pressure_msl",
-  "surface_pressure","wind_speed_10m","wind_direction_10m","wind_gusts_10m","cloud_cover",
-  "precipitation","weather_code"].join(",");
-const PARAM_MARINE_HOURLY = ["wave_height","wave_direction","wave_period","wind_wave_height",
-  "wind_wave_direction","wind_wave_period","swell_wave_height","swell_wave_direction",
-  "swell_wave_period","sea_surface_temperature"].join(",");
-const PARAM_MARINE_CURRENT = ["wave_height","wave_direction","wave_period","sea_surface_temperature"].join(",");
-
-/* Seconda opinione: 3BMeteo e IlMeteo non hanno API pubbliche leggibili dal
-   browser (e i loro ToS vietano lo scraping), quindi nessun confronto numerico
-   in pagina: si offrono link diretti alla previsione della fonte per la zona. */
-const FONTI_SECONDA_OPINIONE = [
-  { nome:"3BMeteo",  tipo:"nome",  url: n => "https://www.3bmeteo.com/meteo/" + n.toLowerCase().replace(/\s+/g,"-") },
-  { nome:"IlMeteo",  tipo:"nome",  url: n => "https://www.ilmeteo.it/meteo/" + encodeURIComponent(n) },
-  { nome:"MeteoAM",  tipo:"nome",  url: n => "https://www.meteoam.it/it/meteo-citta?text=" + encodeURIComponent(n), extra:"Aeronautica Militare" },
-  { nome:"meteoblue",tipo:"coord", url: (lat,lon) => "https://www.meteoblue.com/it/tempo/settimana/" + lat + "N" + lon + "E" }
-];
-
-/* ================= STATO DI SESSIONE (nessun localStorage) ================= */
-const stato = {
-  lat: POSIZIONE_DEFAULT.lat, lon: POSIZIONE_DEFAULT.lon,
-  nomeLuogo: POSIZIONE_DEFAULT.nome, origine: "default",
-  meteo: null, marine: null, demo: false,
-  ultimoAggiornamento: null, caricamentoInCorso: false
-};
-
-/* Memoria posizione tra le visite: localStorage con guardia try/catch, così
-   dove non è disponibile (es. artifact claude.ai) si degrada in silenzio. */
-function salvaPosizione(){
-  try { localStorage.setItem("vedetta-pos", JSON.stringify({
-    lat: stato.lat, lon: stato.lon, nome: stato.nomeLuogo, origine: stato.origine
-  })); } catch(e){}
-}
-function leggiPosizione(){
-  try { return JSON.parse(localStorage.getItem("vedetta-pos")); } catch(e){ return null; }
-}
-
-const $ = id => document.getElementById(id);
-
-/* ========================= VOCABOLARIO MARINARO ========================= */
-const PUNTI16 = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];
-const NOMI_VENTO = { N:"tramontana", NE:"grecale", E:"levante", SE:"scirocco",
-                     S:"ostro", SO:"libeccio", O:"ponente", NO:"maestrale" };
-function puntoCardinale(g, fine=true){
-  if (g == null || isNaN(g)) return "—";
-  const n = fine ? 16 : 8;
-  const idx = Math.round(((g % 360) / (360/n))) % n;
-  return fine ? PUNTI16[idx] : PUNTI16[idx*2];
-}
-const nomeVento = g => NOMI_VENTO[puntoCardinale(g,false)] || "";
-function descrizioneBeaufort(k){
-  if (k == null) return "—";
-  if (k < 2)  return "calma di vento";
-  if (k < 6)  return "bava di vento";
-  if (k < 12) return "brezza leggera";
-  if (k < 20) return "brezza tesa";
-  if (k < 29) return "vento moderato";
-  if (k < 39) return "vento teso";
-  if (k < 50) return "vento fresco";
-  if (k < 62) return "vento forte";
-  if (k < 75) return "burrasca";
-  return "burrasca forte o più";
-}
-function descrizioneDouglas(m){
-  if (m == null) return "";
-  if (m < 0.1)  return "mare calmo";
-  if (m < 0.5)  return "poco mosso";
-  if (m < 1.25) return "mosso";
-  if (m < 2.5)  return "molto mosso";
-  if (m < 4)    return "agitato";
-  return "molto agitato o più";
-}
-function classeUV(uv){
-  if (uv == null) return {colore:"#7D939E", testo:"—", consiglio:""};
-  if (uv < 3)  return {colore:"#177245", testo:"basso",      consiglio:"protezione non necessaria"};
-  if (uv < 6)  return {colore:"#8A5B00", testo:"moderato",   consiglio:"crema e occhiali consigliati"};
-  if (uv < 8)  return {colore:"#B85C00", testo:"alto",       consiglio:"crema, cappello, ombra nelle ore centrali"};
-  if (uv < 11) return {colore:"#BF2F3A", testo:"molto alto", consiglio:"evitare il sole dalle 12 alle 16"};
-  return {colore:"#7D1FA0", testo:"estremo", consiglio:"restare all'ombra, protezione massima"};
-}
-const fmtOra = iso => iso.slice(11,16);
-function fmtGiorno(iso){
-  const d = new Date(iso);
-  return ["dom","lun","mar","mer","gio","ven","sab"][d.getDay()] + " " + d.getDate() + "/" + (d.getMonth()+1);
-}
-const num = (v, dec=0) => (v==null || isNaN(v)) ? "—" : Number(v).toFixed(dec);
-
-/* ===================== FETCH CON RETRY E BACKOFF ===================== */
-async function fetchJson(url, etichetta, tentativi){
-  let errore = null;
-  for (let t = 0; t < tentativi; t++){
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 15000);
-      const r = await fetch(url, {signal: ctrl.signal});
-      clearTimeout(timer);
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      const j = await r.json();
-      if (j.error) throw new Error(j.reason || "errore API");
-      return j;
-    } catch(e){
-      errore = e;
-      if (t < tentativi-1) await new Promise(res => setTimeout(res, RETRY_BASE_MS * 2**t));
-    }
-  }
-  throw new Error(etichetta + ": " + (errore?.message || "rete non raggiungibile"));
-}
-
-function urlForecast(){
-  return "https://api.open-meteo.com/v1/forecast?latitude=" + stato.lat + "&longitude=" + stato.lon +
-    "&hourly=" + PARAM_FORECAST_HOURLY + "&current=" + PARAM_FORECAST_CURRENT +
-    "&forecast_days=3&timezone=auto&wind_speed_unit=kmh";
-}
-function urlMarine(){
-  return "https://marine-api.open-meteo.com/v1/marine?latitude=" + stato.lat + "&longitude=" + stato.lon +
-    "&hourly=" + PARAM_MARINE_HOURLY + "&current=" + PARAM_MARINE_CURRENT +
-    "&forecast_days=3&timezone=auto";
-}
-
-async function caricaDati(conRetry = true){
-  if (stato.caricamentoInCorso) return;
-  stato.caricamentoInCorso = true;
-  $("caricamento").classList.add("visibile");
-  $("avviso-rete").classList.remove("visibile");
-  const nTent = conRetry ? 1 + RETRY_TENTATIVI : 1;
-  try {
-    // Primo giro: UN tentativo per capire subito se la rete è raggiungibile
-    // (in un artifact claude.ai la CSP blocca fetch esterni all'istante).
-    const [m1, m2] = await Promise.allSettled([
-      fetchJson(urlForecast(), "Forecast", 1),
-      fetchJson(urlMarine(),  "Marine",  1)
-    ]);
-    let meteo = m1, marine = m2;
-    if (m1.status === "rejected" && conRetry){
-      // rete forse instabile: riprova con backoff 2/4/8 s
-      [meteo, marine] = await Promise.allSettled([
-        fetchJson(urlForecast(), "Forecast", RETRY_TENTATIVI),
-        fetchJson(urlMarine(),  "Marine",  RETRY_TENTATIVI)
-      ]);
-    }
-    if (meteo.status === "rejected") throw meteo.reason;
-    stato.meteo = meteo.value;
-    stato.marine = marine.status === "fulfilled" ? marine.value : null;
-    stato.demo = false;
-    document.documentElement.removeAttribute("data-demo");
-    stato.ultimoAggiornamento = new Date();
-    impostaSpiaDati("live");
-    renderTutto();
-    if (marine.status === "rejected"){
-      mostraErrore("Dati marini momentaneamente non disponibili (" + marine.reason.message +
-        "). Mostro solo l'atmosfera; nuovo tentativo al prossimo aggiornamento.");
-    }
-  } catch(e){
-    impostaSpiaDati("errore");
-    mostraErrore("Open-Meteo non raggiungibile: " + e.message + ". " +
-      "Se stai guardando questa pagina dentro un artifact di claude.ai, le chiamate di rete " +
-      "sono bloccate dal contenitore: apri il file in un browser normale (doppio clic sul file " +
-      ".html o versione hostata) per i dati reali. Qui puoi comunque vedere l'interfaccia in " +
-      "modalità dimostrativa.");
-  } finally {
-    stato.caricamentoInCorso = false;
-    $("caricamento").classList.remove("visibile");
-    if (stato.ricaricaRichiesta){ stato.ricaricaRichiesta = false; caricaDati(); }
-  }
-}
-
-function mostraErrore(msg){
-  $("testo-errore").textContent = msg;
-  $("avviso-rete").classList.add("visibile");
-}
-function impostaSpiaDati(modo){
-  const s = $("spia-dati");
-  if (modo === "live"){ s.className = "spia"; s.textContent = "dati: Open-Meteo live"; }
-  else if (modo === "demo"){ s.className = "spia demo"; s.textContent = "dati: DEMO non reali"; }
-  else { s.className = "spia avviso"; s.textContent = "dati: non disponibili"; }
-}
-
-/* ========================= MODALITÀ DIMOSTRATIVA =========================
-   Dati sintetici plausibili per il Tirreno d'estate (brezza termica:
-   mattino calmo da grecale, pomeriggio maestrale/ponente 15–25 km/h),
-   SEMPRE marcati come non reali in testata e nel pannello bagnanti.  */
-function generaDemo(){
-  // come l'API vera: le serie orarie partono dalla mezzanotte di oggi
-  const oraInizio = new Date(); oraInizio.setHours(0,0,0,0);
-  const tempi=[], t2m=[], app=[], pmsl=[], psup=[], ws=[], wd=[], wg=[],
-        cc=[], pp=[], pr=[], uv=[], wc=[],
-        wh=[], wdir=[], wper=[], swh=[], swd=[], swp=[], sst=[];
-  for (let i=0; i<72; i++){
-    const d = new Date(oraInizio.getTime() + i*3600e3);
-    const h = d.getHours();
-    const iso = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" +
-      String(d.getDate()).padStart(2,"0") + "T" + String(h).padStart(2,"0") + ":00";
-    tempi.push(iso);
-    const sole = Math.max(0, Math.sin((h-6)/14*Math.PI));      // 0 di notte, max ~13
-    const brezza = Math.max(0, Math.sin((h-10)/9*Math.PI));    // termica pomeridiana
-    const vento = 6 + 16*brezza + Math.sin(i*1.7)*1.5;
-    t2m.push(+(23 + 6.5*sole + Math.sin(i*0.9)*0.4).toFixed(1));
-    app.push(+(24 + 7.5*sole).toFixed(1));
-    pmsl.push(+(1014.5 + 2.2*Math.sin(i/24*Math.PI) - i*0.04).toFixed(1));
-    psup.push(+(1013.2 + 2.2*Math.sin(i/24*Math.PI) - i*0.04).toFixed(1));
-    ws.push(+vento.toFixed(1));
-    wd.push(Math.round(brezza > 0.25 ? 300 + Math.sin(i)*12 : 45 + Math.sin(i)*15));
-    wg.push(+(vento*1.55).toFixed(1));
-    cc.push(Math.round(15 + 20*Math.max(0,Math.sin(i/10))));
-    pp.push(h>=13 && h<=17 ? 55 + Math.round(20*Math.sin((h-13)/4*Math.PI)) : (h>=11 && h<=19 ? 25 : 5));
-    pr.push(h>=14 && h<=16 ? +(1.2 + Math.sin(i)).toFixed(1) : 0);
-    uv.push(+(9.5*Math.pow(sole,1.6)).toFixed(1));
-    wc.push(sole>0 ? (cc[i]>30?2:1) : 0);
-    const onda = 0.15 + 0.45*brezza + 0.05*Math.sin(i*0.6);
-    wh.push(+onda.toFixed(2));
-    wdir.push(Math.round(290 + Math.sin(i)*10));
-    wper.push(+(3.2 + onda*2).toFixed(1));
-    swh.push(+(0.12 + 0.1*Math.sin(i/12)).toFixed(2));
-    swd.push(225);
-    swp.push(+(5.5 + Math.sin(i/8)).toFixed(1));
-    sst.push(26.4);
-  }
-  stato.meteo = {
-    current:{ temperature_2m:t2m[0], apparent_temperature:app[0], pressure_msl:pmsl[0],
-      surface_pressure:psup[0], wind_speed_10m:ws[0], wind_direction_10m:wd[0],
-      wind_gusts_10m:wg[0], cloud_cover:cc[0], precipitation:0, weather_code:wc[0] },
-    hourly:{ time:tempi, temperature_2m:t2m, apparent_temperature:app, pressure_msl:pmsl,
-      surface_pressure:psup, wind_speed_10m:ws, wind_direction_10m:wd, wind_gusts_10m:wg,
-      cloud_cover:cc, precipitation_probability:pp, precipitation:pr, uv_index:uv, weather_code:wc }
-  };
-  stato.marine = {
-    current:{ wave_height:wh[0], wave_direction:wdir[0], wave_period:wper[0], sea_surface_temperature:sst[0] },
-    hourly:{ time:tempi, wave_height:wh, wave_direction:wdir, wave_period:wper,
-      wind_wave_height:wh, wind_wave_direction:wdir, wind_wave_period:wper,
-      swell_wave_height:swh, swell_wave_direction:swd, swell_wave_period:swp,
-      sea_surface_temperature:sst }
-  };
-  // un temporale dimostrativo fra ~5 ore, per mostrare l'allerta
-  const oraDemo = new Date().getHours() + 5;
-  if (oraDemo < 72){ wc[oraDemo] = 95; pp[oraDemo] = 85; pr[oraDemo] = 4.0; }
-  stato.demo = true;
-  document.documentElement.setAttribute("data-demo","");
-  stato.ultimoAggiornamento = new Date();
-  impostaSpiaDati("demo");
-  $("avviso-rete").classList.remove("visibile");
-  renderTutto();
-}
-
-/* ============================ CALCOLI ============================ */
-function indiceOraCorrente(tempi){
-  const adesso = Date.now();
-  for (let i = 0; i < tempi.length; i++){
-    if (new Date(tempi[i]).getTime() >= adesso - 3600e3) return i;
-  }
-  return 0;
-}
-function mappaMarine(){
-  const m = new Map();
-  stato.marine?.hourly?.time?.forEach((t,i) => m.set(t,i));
-  return m;
-}
-function trendPressione(h, i){
-  const j = i - PRESSIONE_ORE_CONFRONTO;
-  if (j < 0 || h.pressure_msl[i] == null || h.pressure_msl[j] == null)
-    return {simbolo:"→", classe:"stab", delta:null};
-  const d = h.pressure_msl[i] - h.pressure_msl[j];
-  if (d >= PRESSIONE_DELTA_HPA)  return {simbolo:"↗", classe:"su",  delta:d};
-  if (d <= -PRESSIONE_DELTA_HPA) return {simbolo:"↘", classe:"giu", delta:d};
-  return {simbolo:"→", classe:"stab", delta:d};
-}
-function frecciaVento(gradi, cls="freccia-nav"){
-  if (gradi == null) return "—";
-  return '<span class="' + cls + '" style="transform:rotate(' + ((gradi+180)%360) +
-    'deg);display:inline-block" title="' + Math.round(gradi) + '° (da ' + puntoCardinale(gradi) + ')">↑</span>';
-}
-function calcolaBandiera(vento, raffica, onda){
-  const S = BANDIERA_SOGLIE;
-  if ((vento   != null && vento   >= S.VENTO_ROSSO_KMH) ||
-      (raffica != null && raffica >= S.RAFFICA_ROSSA_KMH) ||
-      (onda    != null && onda    >= S.ONDA_ROSSA_M))
-    return {classe:"rossa", nome:"Bandiera rossa", significato:"Balneazione pericolosa o vietata"};
-  if ((vento == null || vento < S.VENTO_VERDE_KMH) &&
-      (onda  == null || onda  < S.ONDA_VERDE_M))
-    return {classe:"verde", nome:"Bandiera verde", significato:"Balneazione consentita, mare tranquillo"};
-  return {classe:"gialla", nome:"Bandiera gialla", significato:"Attenzione: bagno con prudenza"};
-}
-
-/* ============================ GRAFICI ============================
-   Canvas nativo, DPR-aware, crosshair + tooltip (mouse e touch).
-   Colori serie validati per contrasto e CVD in entrambi i temi.   */
-const grafici = {};
-function tokenCss(nome){
-  return getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
-}
-function costruisciGrafico(idTela, idTooltip, cfg){
-  const tela = $(idTela), avv = tela.parentElement, tt = $(idTooltip);
-  const g = { tela, avv, tt, cfg, dati:null, hover:null };
-  grafici[idTela] = g;
-  const ridisegna = () => disegnaGrafico(g);
-  new ResizeObserver(ridisegna).observe(avv);
-  avv.addEventListener("pointermove", e => {
-    if (!g.dati) return;
-    const r = tela.getBoundingClientRect();
-    const fra = (e.clientX - r.left - g.margini.sx) / (r.width - g.margini.sx - g.margini.dx);
-    const idx = Math.round(fra * (g.dati.tempi.length - 1));
-    g.hover = Math.max(0, Math.min(g.dati.tempi.length - 1, idx));
-    disegnaGrafico(g);
-  });
-  avv.addEventListener("pointerleave", () => { g.hover = null; disegnaGrafico(g); });
-  return g;
-}
-function disegnaGrafico(g){
-  const {tela, cfg} = g;
-  if (!g.dati){ return; }
-  const dpr = window.devicePixelRatio || 1;
-  const W = tela.clientWidth, H = tela.clientHeight;
-  if (tela.width !== W*dpr || tela.height !== H*dpr){ tela.width = W*dpr; tela.height = H*dpr; }
-  const ctx = tela.getContext("2d");
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,W,H);
-
-  const mg = { sx:30, dx:8, alto:8, basso:18 };
-  g.margini = mg;
-  const {tempi, serie, banda} = g.dati;
-  const n = tempi.length;
-  const colSerie = tokenCss(cfg.tokenColore);
-  const colGriglia = tokenCss("--griglia");
-  const colMuto = tokenCss("--inchiostro-3");
-  const colFilo = tokenCss("--filo-forte");
-
-  let vmax = cfg.minMax;
-  for (let i=0;i<n;i++){
-    if (serie[i] != null) vmax = Math.max(vmax, serie[i]);
-    if (banda && banda[i] != null) vmax = Math.max(vmax, banda[i]);
-  }
-  vmax = cfg.vmaxFisso || vmax * 1.15;   // scala fissa per le percentuali
-  const X = i => mg.sx + (W - mg.sx - mg.dx) * (n<=1 ? 0 : i/(n-1));
-  const Y = v => mg.alto + (H - mg.alto - mg.basso) * (1 - v/vmax);
-
-  // griglia orizzontale: 3 linee + etichette
-  ctx.font = "10px " + tokenCss("--f-strumento");
-  ctx.textAlign = "right"; ctx.textBaseline = "middle";
-  const passo = vmax/3;
-  for (let k=1;k<=3;k++){
-    const v = passo*k, y = Y(v);
-    ctx.strokeStyle = colGriglia; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(mg.sx, y); ctx.lineTo(W-mg.dx, y); ctx.stroke();
-    ctx.fillStyle = colMuto;
-    ctx.fillText(cfg.fmtAsse(v), mg.sx-4, y);
-  }
-  // linea di base
-  ctx.strokeStyle = colFilo; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(mg.sx, Y(0)); ctx.lineTo(W-mg.dx, Y(0)); ctx.stroke();
-
-  // tacche temporali: ogni 6 ore; a mezzanotte etichetta del giorno
-  ctx.textAlign = "center"; ctx.textBaseline = "top";
-  for (let i=0;i<n;i++){
-    const hh = tempi[i].slice(11,13);
-    if (hh === "00" || i === 0){
-      ctx.strokeStyle = colFilo;
-      ctx.beginPath(); ctx.moveTo(X(i), mg.alto); ctx.lineTo(X(i), H-mg.basso); ctx.stroke();
-      ctx.fillStyle = colMuto;
-      ctx.fillText(i===0 ? "ora" : fmtGiorno(tempi[i]), X(i)+2, H-mg.basso+4);
-    } else if (["06","12","18"].includes(hh)){
-      ctx.fillStyle = colMuto;
-      ctx.fillText(hh, X(i), H-mg.basso+4);
-    }
-  }
-
-  // soglie bandiera tratteggiate (riferimenti operativi, colori semaforo)
-  if (cfg.soglie){
-    for (const s of cfg.soglie){
-      if (s.v >= vmax) continue;
-      ctx.strokeStyle = tokenCss(s.token); ctx.lineWidth = 1;
-      ctx.setLineDash([4,4]);
-      ctx.beginPath(); ctx.moveTo(mg.sx, Y(s.v)); ctx.lineTo(W-mg.dx, Y(s.v)); ctx.stroke();
-      ctx.setLineDash([]);
-    }
-  }
-
-  // banda raffiche: area fra serie e banda, stessa tinta traslucida
-  if (banda){
-    ctx.beginPath();
-    let inizio = true;
-    for (let i=0;i<n;i++){ if (serie[i]==null||banda[i]==null) continue;
-      const x=X(i), y=Y(banda[i]);
-      if (inizio){ ctx.moveTo(x,y); inizio=false; } else ctx.lineTo(x,y);
-    }
-    for (let i=n-1;i>=0;i--){ if (serie[i]==null||banda[i]==null) continue;
-      ctx.lineTo(X(i), Y(serie[i]));
-    }
-    ctx.closePath();
-    ctx.fillStyle = colSerie; ctx.globalAlpha = .18; ctx.fill(); ctx.globalAlpha = 1;
-  }
-  // area sotto la serie (solo grafico onda)
-  if (cfg.areaBase){
-    ctx.beginPath();
-    ctx.moveTo(X(0), Y(0));
-    for (let i=0;i<n;i++){ if (serie[i]!=null) ctx.lineTo(X(i), Y(serie[i])); }
-    ctx.lineTo(X(n-1), Y(0)); ctx.closePath();
-    ctx.fillStyle = colSerie; ctx.globalAlpha = .13; ctx.fill(); ctx.globalAlpha = 1;
-  }
-  // linea principale 2px + punto finale
-  ctx.strokeStyle = colSerie; ctx.lineWidth = 2; ctx.lineJoin = "round";
-  ctx.beginPath();
-  let inizio = true;
-  for (let i=0;i<n;i++){ if (serie[i]==null) continue;
-    const x=X(i), y=Y(serie[i]);
-    if (inizio){ ctx.moveTo(x,y); inizio=false; } else ctx.lineTo(x,y);
-  }
-  ctx.stroke();
-  const ultimo = n-1;
-  if (serie[ultimo]!=null){
-    ctx.fillStyle = colSerie;
-    ctx.beginPath(); ctx.arc(X(ultimo), Y(serie[ultimo]), 3.5, 0, 7); ctx.fill();
-  }
-
-  // crosshair + tooltip
-  if (g.hover != null && serie[g.hover] != null){
-    const i = g.hover, x = X(i);
-    ctx.strokeStyle = colMuto; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
-    ctx.beginPath(); ctx.moveTo(x, mg.alto); ctx.lineTo(x, H-mg.basso); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = colSerie;
-    ctx.beginPath(); ctx.arc(x, Y(serie[i]), 4, 0, 7); ctx.fill();
-    ctx.strokeStyle = tokenCss("--superficie"); ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, Y(serie[i]), 4, 0, 7); ctx.stroke();
-    const tt = g.tt;
-    tt.innerHTML = '<span class="tt-ora">' + fmtGiorno(tempi[i]) + " " + fmtOra(tempi[i]) +
-      "</span><br>" + cfg.fmtTooltip(i, g.dati);
-    tt.style.display = "block";
-    const largTT = tt.offsetWidth;
-    tt.style.left = Math.max(0, Math.min(W - largTT, x - largTT/2)) + "px";
-    tt.style.top = "-6px";
-  } else {
-    g.tt.style.display = "none";
-  }
-}
-
-function aggiornaGrafici(){
-  const h = stato.meteo.hourly;
-  const i0 = indiceOraCorrente(h.time);
-  const fine = Math.min(i0 + ORE_GRAFICO, h.time.length);
-  const tempi = h.time.slice(i0, fine);
-
-  const gv = grafici["tela-vento"];
-  gv.dati = { tempi,
-    serie: h.wind_speed_10m.slice(i0, fine),
-    banda: h.wind_gusts_10m.slice(i0, fine) };
-  disegnaGrafico(gv);
-
-  const mm = mappaMarine();
-  const go = grafici["tela-onda"];
-  const onde = tempi.map(t => { const im = mm.get(t); return im!=null ? stato.marine.hourly.wave_height[im] : null; });
-  go.dati = { tempi, serie: onde };
-  disegnaGrafico(go);
-
-  const gp = grafici["tela-pioggia"];
-  gp.dati = { tempi,
-    serie: (h.precipitation_probability || []).slice(i0, fine),
-    mmOra: (h.precipitation || []).slice(i0, fine) };
-  disegnaGrafico(gp);
-}
-
-/* ============================ RENDER ============================ */
-function renderAdesso(){
-  const c = stato.meteo.current, h = stato.meteo.hourly;
-  const i0 = indiceOraCorrente(h.time);
-  const cm = stato.marine?.current;
-  const vento = c?.wind_speed_10m ?? h.wind_speed_10m[i0];
-  const raff  = c?.wind_gusts_10m ?? h.wind_gusts_10m[i0];
-  const dir   = c?.wind_direction_10m ?? h.wind_direction_10m[i0];
-  const onda  = cm?.wave_height ?? (() => { const im = mappaMarine().get(h.time[i0]); return im!=null ? stato.marine?.hourly.wave_height[im] : null; })();
-  const tMare = cm?.sea_surface_temperature ?? stato.marine?.hourly?.sea_surface_temperature?.[indiceOraCorrente(stato.marine?.hourly?.time || h.time)] ?? null;
-  const uvOra = h.uv_index?.[i0];
-
-  const b = calcolaBandiera(vento, raff, onda);
-  const cost = $("costola-bandiera");
-  cost.className = "bandiera-costola " + b.classe;
-  cost.textContent = b.classe;
-
-  $("ad-vento").innerHTML = frecciaVento(dir) + " " + num(vento) + " <small>km/h</small>";
-  $("ad-vento-desc").textContent = descrizioneBeaufort(vento) + " da " + puntoCardinale(dir) +
-    (nomeVento(dir) ? " · " + nomeVento(dir) : "");
-  $("ad-raffica").innerHTML = num(raff) + " <small>km/h</small>";
-  $("ad-onda").innerHTML = (onda!=null ? num(onda,1) : "—") + " <small>m</small>";
-  $("ad-onda-desc").textContent = onda!=null ? descrizioneDouglas(onda) : "dato marino n.d.";
-  $("ad-aria").innerHTML = num(c?.temperature_2m) + "<small>°</small> / " + num(c?.apparent_temperature) + "<small>°</small>";
-  $("ad-mare-riga").textContent = "mare: " + (tMare!=null ? num(tMare,1) + " °C" : "n.d.");
-  const tp = trendPressione(h, Math.max(i0, PRESSIONE_ORE_CONFRONTO));
-  $("ad-pressione").innerHTML = num(c?.pressure_msl,1) + " <small>hPa</small>";
-  $("ad-press-trend").innerHTML = '<span class="trend ' + tp.classe + '">' + tp.simbolo + "</span> " +
-    (tp.delta==null ? "n.d." : (tp.delta>=0?"+":"") + tp.delta.toFixed(1) + " hPa in 3h");
-  const uv = classeUV(uvOra);
-  $("ad-uv").innerHTML = '<span class="uv-tacca" style="background:' + uv.colore + '"></span>' + num(uvOra);
-  $("ad-uv-desc").textContent = uv.testo + (uv.consiglio ? " · " + uv.consiglio : "");
-  $("card-adesso").hidden = false;
-}
-
-function renderProssime(){
-  const h = stato.meteo.hourly, mm = mappaMarine();
-  const i0 = indiceOraCorrente(h.time);
-  let html = "";
-  for (let k=0; k<6 && i0+k < h.time.length; k++){
-    const i = i0+k, im = mm.get(h.time[i]);
-    const onda = im!=null ? stato.marine?.hourly.wave_height[im] : null;
-    html += '<div class="ora-card"><div class="h">' + fmtOra(h.time[i]) + '</div>' +
-      '<div class="t">' + num(h.temperature_2m[i]) + '°</div>' +
-      '<div class="vr">' + frecciaVento(h.wind_direction_10m[i]) + " " + num(h.wind_speed_10m[i]) + '</div>' +
-      (onda!=null ? '<div class="on">' + num(onda,1) + ' m</div>' : "") +
-      '<div>☂ ' + num(h.precipitation_probability?.[i]) + '%</div></div>';
-  }
-  $("prossime-ore").innerHTML = html;
-  $("card-prossime").hidden = false;
-}
-
-function renderTabella(){
-  const h = stato.meteo.hourly, mm = mappaMarine(), mh = stato.marine?.hourly;
-  const i0 = indiceOraCorrente(h.time);
-  const fine = Math.min(i0+72, h.time.length);
-  let html = "", giorno = "";
-  for (let i=i0; i<fine; i++){
-    const g = h.time[i].slice(0,10);
-    if (g !== giorno){ giorno = g;
-      html += '<tr class="riga-giorno"><td colspan="12">' + fmtGiorno(h.time[i]) + "</td></tr>";
-    }
-    const tp = trendPressione(h, i);
-    const im = mm.get(h.time[i]);
-    const onda = (mh && im!=null) ? mh.wave_height[im] : null;
-    const swD  = (mh && im!=null) ? mh.swell_wave_direction[im] : null;
-    const swH  = (mh && im!=null) ? mh.swell_wave_height[im] : null;
-    const uv = classeUV(h.uv_index?.[i]);
-    html += '<tr class="' + (i===i0 ? "riga-attuale" : "") + '">' +
-      "<td>" + fmtOra(h.time[i]) + "</td>" +
-      "<td>" + num(h.temperature_2m[i]) + "°</td>" +
-      "<td>" + num(h.apparent_temperature[i]) + "°</td>" +
-      "<td>" + num(h.pressure_msl[i]) + "</td>" +
-      '<td><span class="trend ' + tp.classe + '" title="' +
-        (tp.delta==null?"n.d.":(tp.delta>=0?"+":"")+tp.delta.toFixed(1)+" hPa/3h") + '">' + tp.simbolo + "</span></td>" +
-      "<td>" + frecciaVento(h.wind_direction_10m[i]) + " " + puntoCardinale(h.wind_direction_10m[i]) + " " + num(h.wind_speed_10m[i]) + "</td>" +
-      "<td>" + num(h.wind_gusts_10m[i]) + "</td>" +
-      "<td>" + (onda!=null ? num(onda,1) : "—") + "</td>" +
-      "<td>" + (swD!=null ? frecciaVento(swD) + " " + puntoCardinale(swD) + (swH!=null ? " " + num(swH,1) : "") : "—") + "</td>" +
-      "<td>" + num(h.precipitation_probability?.[i]) + "</td>" +
-      "<td>" + num(h.precipitation?.[i],1) + "</td>" +
-      '<td><span class="uv-chip" style="background:' + uv.colore + '">' + num(h.uv_index?.[i]) + "</span></td></tr>";
-  }
-  $("corpo-tabella").innerHTML = html;
-  $("card-tabella").hidden = false;
-}
-
-/* Radar pioggia RainViewer: mappa interattiva incorporata, centrata sulla
-   posizione corrente. In modalità demo la card resta nascosta (niente rete). */
-let urlRadarCorrente = "";
-function aggiornaRadar(){
-  const card = $("card-radar");
-  if (stato.demo){ card.hidden = true; return; }
-  const url = "https://www.rainviewer.com/map.html?loc=" + stato.lat + "," + stato.lon +
-    ",8&oCS=1&c=3&o=83&lm=1&layer=radar&sm=1&sn=1";
-  if (url !== urlRadarCorrente){        // niente reload dell'iframe a ogni refresh
-    urlRadarCorrente = url;
-    $("radar-frame").src = url;
-  }
-  card.hidden = false;
-}
-
-/* Link "seconda opinione": per le fonti a ricerca per nome si usa il nome del
-   luogo quando è reale, altrimenti il default Follonica. meteoblue va a coordinate. */
-function aggiornaLinkFonti(){
-  const nomeValido = !["posizione attuale","punto personalizzato","posizione salvata"].includes(stato.nomeLuogo);
-  const nome = nomeValido ? stato.nomeLuogo : POSIZIONE_DEFAULT.nome;
-  $("fonti-chips").innerHTML = FONTI_SECONDA_OPINIONE.map(f => {
-    const url = f.tipo === "coord" ? f.url(stato.lat, stato.lon) : f.url(nome);
-    const sotto = f.tipo === "coord" ? "sulle coordinate esatte" : (f.extra || nome);
-    return '<a href="' + url + '" target="_blank" rel="noopener">' + f.nome +
-      "<small>" + sotto + "</small></a>";
-  }).join("");
-}
-
-/* Vento del giorno per il pannello bagnino: barre orarie 6–21 colorate con le
-   soglie bandiera + sintesi testuale "si alza / cala". */
-function renderVentoGiorno(){
-  const h = stato.meteo.hourly;
-  const i0 = indiceOraCorrente(h.time);
-  const oggi = h.time[i0].slice(0,10);
-  const oraAttuale = parseInt(h.time[i0].slice(11,13), 10);
-  const ORA_MIN = 6, ORA_MAX = 21, SCALA_MAX = 45;
-  // dopo le 21 la giornata utile è finita: si mostra domani
-  let giornoTarget = oggi, etichetta = "Vento nella giornata (6–21)";
-  if (oraAttuale > ORA_MAX){
-    const domani = h.time.find(t => t.slice(0,10) > oggi);
-    if (domani){ giornoTarget = domani.slice(0,10); etichetta = "Vento domani (6–21)"; }
-  }
-  $("pp-vento-titolo").textContent = etichetta;
-  const punti = [];
-  for (let i = 0; i < h.time.length; i++){
-    if (h.time[i].slice(0,10) !== giornoTarget) continue;
-    const ora = parseInt(h.time[i].slice(11,13), 10);
-    if (ora < ORA_MIN || ora > ORA_MAX) continue;
-    punti.push({ ora, v: h.wind_speed_10m[i] });
-  }
-  const S = BANDIERA_SOGLIE;
-  $("pp-vento-barre").innerHTML = punti.map(p => {
-    const cls = p.v == null ? "" :
-      p.v >= S.VENTO_ROSSO_KMH ? "rossa" : p.v >= S.VENTO_VERDE_KMH ? "gialla" : "verde";
-    const alt = Math.max(5, Math.min(100, (p.v ?? 0) / SCALA_MAX * 100));
-    return '<div class="b ' + cls + (giornoTarget === oggi && p.ora === oraAttuale ? " ora" : "") +
-      '" style="height:' + alt + '%" title="' + p.ora + ':00 — ' + num(p.v) + ' km/h"></div>';
-  }).join("");
-  $("pp-vento-ore").innerHTML = punti.map(p =>
-    "<span>" + (p.ora % 3 === 0 ? p.ora : "") + "</span>").join("");
-
-  // sintesi: picco, ora di salita (60% del picco), ora di calo
-  let sintesi = "";
-  const validi = punti.filter(p => p.v != null);
-  if (validi.length){
-    const picco = validi.reduce((a,b) => b.v > a.v ? b : a);
-    if (picco.v < 12){
-      sintesi = "Vento debole per tutta la giornata (max " + num(picco.v) + " km/h).";
-    } else {
-      const soglia = picco.v * 0.6;
-      const salita = validi.find(p => p.v >= soglia);
-      const calo = validi.find(p => p.ora > picco.ora && p.v < soglia);
-      sintesi = "Si alza verso le " + salita.ora + " · massimo " + num(picco.v) +
-        " km/h alle " + picco.ora +
-        (calo ? " · cala dopo le " + calo.ora + "." : " · resta sostenuto fino a sera.");
-    }
-  }
-  $("pp-vento-sintesi").textContent = sintesi;
-}
-
-/* Allerta temporale: weather_code 95/96/99 nelle prossime ORE_ALLERTA_TEMPORALE
-   ore. Per un bagnino temporale = fulmini = uscita dall'acqua: banner sempre
-   visibile in entrambe le viste. */
-function controllaTemporale(){
-  const banner = $("allerta-temporale");
-  const h = stato.meteo.hourly;
-  const i0 = indiceOraCorrente(h.time);
-  const adesso = TEMPORALE_CODICI.includes(stato.meteo.current?.weather_code);
-  let prima = null;
-  const fine = Math.min(i0 + ORE_ALLERTA_TEMPORALE, h.time.length);
-  for (let i = i0; i < fine; i++){
-    if (TEMPORALE_CODICI.includes(h.weather_code?.[i])){ prima = i; break; }
-  }
-  if (adesso){
-    banner.innerHTML = "⚡ TEMPORALE IN CORSO O IMMINENTE" +
-      "<small>Rischio fulmini: far uscire i bagnanti dall'acqua e liberare la battigia</small>";
-    banner.hidden = false;
-  } else if (prima != null){
-    banner.innerHTML = "⚡ Temporale previsto verso le " + fmtOra(h.time[prima]) +
-      (h.time[prima].slice(0,10) !== h.time[i0].slice(0,10) ? " di domani" : "") +
-      "<small>Rischio fulmini: prepararsi a far uscire i bagnanti dall'acqua</small>";
-    banner.hidden = false;
-  } else {
-    banner.hidden = true;
-  }
-}
-
-/* Pioggia del giorno per il pannello bagnino: barre di probabilità 6–21
-   (rampa blu monocroma) + sintesi "arriva / smette" e accumulo previsto. */
-function renderPioggiaGiorno(){
-  const h = stato.meteo.hourly;
-  const i0 = indiceOraCorrente(h.time);
-  const oggi = h.time[i0].slice(0,10);
-  const oraAttuale = parseInt(h.time[i0].slice(11,13), 10);
-  const ORA_MIN = 6, ORA_MAX = 21;
-  let giornoTarget = oggi, etichetta = "Pioggia nella giornata (6–21)";
-  if (oraAttuale > ORA_MAX){
-    const domani = h.time.find(t => t.slice(0,10) > oggi);
-    if (domani){ giornoTarget = domani.slice(0,10); etichetta = "Pioggia domani (6–21)"; }
-  }
-  $("pp-pioggia-titolo").textContent = etichetta;
-  const punti = [];
-  for (let i = 0; i < h.time.length; i++){
-    if (h.time[i].slice(0,10) !== giornoTarget) continue;
-    const ora = parseInt(h.time[i].slice(11,13), 10);
-    if (ora < ORA_MIN || ora > ORA_MAX) continue;
-    punti.push({ ora, p: h.precipitation_probability?.[i], mm: h.precipitation?.[i] ?? 0 });
-  }
-  const S = PIOGGIA_SOGLIE;
-  $("pp-pioggia-barre").innerHTML = punti.map(pt => {
-    const cls = pt.p == null ? "" : pt.p >= S.ALTA ? "pb2" : pt.p >= S.BASSA ? "pb1" : "pb0";
-    const alt = Math.max(5, Math.min(100, pt.p ?? 0));
-    return '<div class="b ' + cls + (giornoTarget === oggi && pt.ora === oraAttuale ? " ora" : "") +
-      '" style="height:' + alt + '%" title="' + pt.ora + ':00 — ' + num(pt.p) + '% · ' + num(pt.mm,1) + ' mm"></div>';
-  }).join("");
-  $("pp-pioggia-ore").innerHTML = punti.map(pt =>
-    "<span>" + (pt.ora % 3 === 0 ? pt.ora : "") + "</span>").join("");
-
-  let sintesi = "";
-  const validi = punti.filter(pt => pt.p != null);
-  if (validi.length){
-    const maxP = Math.max(...validi.map(pt => pt.p));
-    const accumulo = validi.reduce((s,pt) => s + (pt.mm || 0), 0);
-    if (maxP < S.BASSA){
-      sintesi = "Nessuna pioggia significativa prevista.";
-    } else {
-      const arrivo = validi.find(pt => pt.p >= S.ALTA);
-      const fine = arrivo ? validi.find(pt => pt.ora > arrivo.ora && pt.p < S.BASSA + 10) : null;
-      if (arrivo){
-        sintesi = "Pioggia probabile dalle " + arrivo.ora +
-          (fine ? " · esaurimento verso le " + fine.ora : " · fino a sera") +
-          (accumulo >= 0.5 ? " · accumulo ~" + num(accumulo) + " mm" : "") + ".";
-      } else {
-        sintesi = "Possibili rovesci (probabilità max " + num(maxP) + "%).";
-      }
-    }
-  }
-  $("pp-pioggia-sintesi").textContent = sintesi;
-}
-
-/* Spia "dati vecchi": aggiorna l'età dei dati ogni minuto; oltre la soglia
-   la marca in rosso — utile quando il maltempo toglie la connessione. */
-function aggiornaEtaDati(){
-  if (!stato.ultimoAggiornamento) return;
-  const el = $("ultimo-agg");
-  const minuti = Math.round((Date.now() - stato.ultimoAggiornamento.getTime()) / 60000);
-  const ora = stato.ultimoAggiornamento.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
-  if (minuti > DATI_VECCHI_MINUTI){
-    el.innerHTML = '<span class="stantio">⚠ dati di ' + minuti + " min fa (" + ora + ")</span>";
-  } else {
-    el.textContent = "aggiornato: " + ora + (stato.demo ? " (demo)" : "");
-  }
-}
-
-function renderPubblico(){
-  const c = stato.meteo.current, h = stato.meteo.hourly, cm = stato.marine?.current;
-  const i0 = indiceOraCorrente(h.time);
-  const vento = c?.wind_speed_10m ?? h.wind_speed_10m[i0];
-  const raff  = c?.wind_gusts_10m ?? h.wind_gusts_10m[i0];
-  const dir   = c?.wind_direction_10m ?? h.wind_direction_10m[i0];
-  const onda  = cm?.wave_height ?? null;
-  const tMare = cm?.sea_surface_temperature ?? stato.marine?.hourly?.sea_surface_temperature?.[i0] ?? null;
-  const uvOra = h.uv_index?.[i0];
-
-  const b = calcolaBandiera(vento, raff, onda);
-  $("pp-bandiera").className = "pp-bandiera " + b.classe;
-  $("pp-nome").textContent = b.nome;
-  $("pp-significato").textContent = b.significato;
-  $("pp-temp").textContent = num(c?.temperature_2m) + "°";
-  $("pp-mare").textContent = tMare!=null ? num(tMare) + "°" : "n.d.";
-  const uv = classeUV(uvOra);
-  $("pp-uv").textContent = uvOra!=null ? num(uvOra) : "—";
-  $("pp-uv-consiglio").textContent = uvOra!=null ? uv.testo + " — " + uv.consiglio : "";
-  $("pp-onde").textContent = onda!=null ? num(onda,1) + " m" : "n.d.";
-  $("pp-onde-desc").textContent = descrizioneDouglas(onda);
-  const nv = nomeVento(dir);
-  $("pp-vento").textContent = descrizioneBeaufort(vento) + " da " + puntoCardinale(dir,false) +
-    (nv ? " (" + nv + ")" : "") + " · " + num(vento) + " km/h";
-  $("pp-agg").textContent = stato.ultimoAggiornamento
-    ? stato.ultimoAggiornamento.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}) : "—";
-}
-
-function renderTutto(){
-  if (!stato.meteo) return;
-  renderAdesso();
-  $("card-grafici").hidden = false;
-  aggiornaGrafici();
-  aggiornaRadar();
-  aggiornaLinkFonti();
-  renderProssime();
-  renderTabella();
-  renderPubblico();
-  renderVentoGiorno();
-  renderPioggiaGiorno();
-  controllaTemporale();
-  aggiornaEtaDati();
-  $("nome-luogo").textContent = stato.nomeLuogo;
-}
-
-/* ============================ POSIZIONE ============================ */
-function aggiornaSpiaPosizione(){
-  const s = $("spia-posizione");
-  if (stato.origine === "gps"){
-    s.className = "spia";
-    s.textContent = "GPS " + stato.lat.toFixed(3) + ", " + stato.lon.toFixed(3);
-  } else if (stato.origine === "manuale"){
-    s.className = "spia";
-    s.textContent = stato.nomeLuogo + " (" + stato.lat.toFixed(3) + ", " + stato.lon.toFixed(3) + ")";
-  } else {
-    s.className = "spia avviso";
-    s.textContent = "posizione di default: Follonica — verifica le coordinate dello stabilimento";
-  }
-}
-/* Imposta la posizione, la ricorda e ricarica i dati: unico punto d'ingresso. */
-function impostaPosizione(lat, lon, nome, origine){
-  stato.lat = +(+lat).toFixed(4); stato.lon = +(+lon).toFixed(4);
-  stato.nomeLuogo = nome; stato.origine = origine;
-  salvaPosizione();
-  aggiornaSpiaPosizione();
-  if (stato.caricamentoInCorso) stato.ricaricaRichiesta = true;
-  else caricaDati();
-}
-
-/* GPS non bloccante: i dati sono GIÀ in caricamento con la posizione corrente;
-   se il fix arriva ed è distante più di ~500 m, si ricarica su quella. */
-function richiediGPS(){
-  if (!("geolocation" in navigator)){
-    mostraErrore("Geolocalizzazione non disponibile su questo dispositivo."); return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const la = pos.coords.latitude, lo = pos.coords.longitude;
-      const distante = Math.abs(la - stato.lat) > 0.005 || Math.abs(lo - stato.lon) > 0.005;
-      if (distante || stato.origine !== "gps")
-        impostaPosizione(la, lo, "posizione attuale", "gps");
-    },
-    err => {
-      if (err.code === err.PERMISSION_DENIED)
-        mostraErrore("Permesso GPS negato: continuo con «" + stato.nomeLuogo +
-          "». Puoi cambiare posizione dal pulsante «Posizione».");
-    },
-    {enableHighAccuracy:false, timeout:8000, maximumAge:300000}
-  );
-}
-let timerRicerca = null;
-async function cercaLuogo(testo){
-  const ul = $("risultati-ricerca");
-  if (testo.trim().length < 2){ ul.innerHTML = ""; return; }
-  try {
-    const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?name=" +
-      encodeURIComponent(testo) + "&count=5&language=it&format=json");
-    const j = await r.json();
-    ul.innerHTML = (j.results || []).map(x =>
-      '<li data-lat="' + x.latitude + '" data-lon="' + x.longitude + '" data-nome="' + x.name + '">' +
-      x.name + (x.admin1 ? ", " + x.admin1 : "") + " (" + x.latitude.toFixed(2) + ", " + x.longitude.toFixed(2) + ")</li>"
-    ).join("") || "<li>Nessun risultato</li>";
-  } catch { ul.innerHTML = "<li>Ricerca non disponibile (rete bloccata o assente)</li>"; }
-}
-
-/* ==================== MODULI OPZIONALI ==================== */
-async function aggiornaSIR(){
-  const esito = $("sir-esito");
-  if (!$("sir-attivo").checked){ esito.textContent = ""; return; }
-  if (!SIR_CONFIG.urlJson){
-    esito.innerHTML = 'Nessun endpoint configurato. Consulta il portale: ' +
-      '<a href="' + SIR_CONFIG.portale + '" target="_blank" rel="noopener">stazioni SIR Toscana</a>.';
-    return;
-  }
-  try {
-    const j = await fetchJson(SIR_CONFIG.urlJson, "SIR Toscana", 2);
-    esito.textContent = "OSSERVATO (non validato) — " + (j.stazione ?? "stazione") + ": " +
-      (j.temperatura!=null ? j.temperatura + " °C, " : "") +
-      (j.vento_kmh!=null ? "vento " + j.vento_kmh + " km/h, " : "") +
-      "rilevato " + (j.ora ?? "n.d.");
-  } catch(e){ esito.textContent = "Stazione SIR non raggiungibile: " + e.message; }
-}
-async function confrontaComparativa(){
-  const esito = $("comp-esito");
-  if (!$("comp-attivo").checked){ esito.textContent = "Modulo disattivato."; return; }
-  const chiave = $("comp-chiave").value.trim();
-  if (!chiave){ esito.textContent = "Inserisci una API key Tomorrow.io."; return; }
-  esito.textContent = "Interrogo la fonte comparativa…";
-  try {
-    const r = await fetch("https://api.tomorrow.io/v4/weather/realtime?location=" +
-      stato.lat + "," + stato.lon + "&apikey=" + encodeURIComponent(chiave));
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const v = (await r.json())?.data?.values || {};
-    esito.textContent = "Tomorrow.io realtime: " + (v.temperature ?? "—") + " °C, vento " +
-      (v.windSpeed!=null ? (v.windSpeed*3.6).toFixed(0) : "—") + " km/h. " +
-      "Scostamenti grandi da Open-Meteo = prudenza.";
-  } catch(e){
-    esito.textContent = "Fonte comparativa non raggiungibile: " + e.message + " (chiave, quota o CORS).";
-  }
-}
-
-/* ============================ EVENTI ============================ */
-function cambiaTab(tecnica){
-  $("vista-tecnica").classList.toggle("nascosta", !tecnica);
-  $("vista-bagnanti").classList.toggle("attiva", !tecnica);
-  $("tab-tecnica").setAttribute("aria-selected", tecnica);
-  $("tab-bagnanti").setAttribute("aria-selected", !tecnica);
-  if (tecnica) aggiornaGrafici();
-}
-$("tab-tecnica").addEventListener("click", () => cambiaTab(true));
-$("tab-bagnanti").addEventListener("click", () => cambiaTab(false));
-$("btn-aggiorna").addEventListener("click", () => caricaDati());
-$("btn-riprova").addEventListener("click", () => caricaDati());
-$("btn-demo").addEventListener("click", generaDemo);
-$("btn-tema").addEventListener("click", () => {
-  const r = document.documentElement;
-  const scuroOS = matchMedia("(prefers-color-scheme: dark)").matches;
-  const attuale = r.dataset.theme || (scuroOS ? "dark" : "light");
-  r.dataset.theme = attuale === "dark" ? "light" : "dark";
-  if (stato.meteo) aggiornaGrafici();  // ridisegna con i token del nuovo tema
-});
-matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
-  if (stato.meteo) aggiornaGrafici();
-});
-
-$("btn-posizione").addEventListener("click", () => {
-  $("inp-lat").value = stato.lat; $("inp-lon").value = stato.lon;
-  $("dlg-posizione").showModal();
-});
-$("dlg-annulla").addEventListener("click", () => $("dlg-posizione").close());
-$("chip-gps").addEventListener("click", () => { $("dlg-posizione").close(); richiediGPS(); });
-$("chip-follonica").addEventListener("click", () => {
-  $("dlg-posizione").close();
-  impostaPosizione(POSIZIONE_DEFAULT.lat, POSIZIONE_DEFAULT.lon, POSIZIONE_DEFAULT.nome, "manuale");
-});
-$("dlg-salva").addEventListener("click", () => {
-  const lat = parseFloat($("inp-lat").value.replace(",", "."));
-  const lon = parseFloat($("inp-lon").value.replace(",", "."));
-  if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180){
-    alert("Coordinate non valide."); return;
-  }
-  $("dlg-posizione").close();
-  impostaPosizione(lat, lon, "punto personalizzato", "manuale");
-});
-$("cerca-luogo").addEventListener("input", e => {
-  clearTimeout(timerRicerca);
-  timerRicerca = setTimeout(() => cercaLuogo(e.target.value), 350);
-});
-// un tocco sul risultato applica subito la posizione (niente passaggi in più)
-$("risultati-ricerca").addEventListener("click", e => {
-  const li = e.target.closest("li[data-lat]");
-  if (!li) return;
-  $("risultati-ricerca").innerHTML = "";
-  $("cerca-luogo").value = "";
-  $("dlg-posizione").close();
-  impostaPosizione(li.dataset.lat, li.dataset.lon, li.dataset.nome, "manuale");
-});
-$("sir-attivo").addEventListener("change", aggiornaSIR);
-$("comp-test").addEventListener("click", confrontaComparativa);
-
-/* ============================ AVVIO ============================ */
-costruisciGrafico("tela-vento", "tt-vento", {
-  tokenColore:"--serie-vento", minMax:30, areaBase:false,
-  soglie:[{v:BANDIERA_SOGLIE.VENTO_VERDE_KMH, token:"--giallo"},
-          {v:BANDIERA_SOGLIE.VENTO_ROSSO_KMH, token:"--rosso"}],
-  fmtAsse:v => Math.round(v),
-  fmtTooltip:(i,d) => "vento " + num(d.serie[i]) + " km/h · raffica " + num(d.banda[i]) + " km/h"
-});
-costruisciGrafico("tela-onda", "tt-onda", {
-  tokenColore:"--serie-onda", minMax:0.6, areaBase:true,
-  soglie:[{v:BANDIERA_SOGLIE.ONDA_VERDE_M, token:"--giallo"},
-          {v:BANDIERA_SOGLIE.ONDA_ROSSA_M, token:"--rosso"}],
-  fmtAsse:v => v.toFixed(1),
-  fmtTooltip:(i,d) => "onda " + num(d.serie[i],2) + " m · " + descrizioneDouglas(d.serie[i])
-});
-costruisciGrafico("tela-pioggia", "tt-pioggia", {
-  tokenColore:"--serie-pioggia", minMax:100, vmaxFisso:100, areaBase:true,
-  fmtAsse:v => Math.round(v),
-  fmtTooltip:(i,d) => "probabilità " + num(d.serie[i]) + "% · " + num(d.mmOra?.[i],1) + " mm/h"
-});
-
-/* Avvio istantaneo: si parte SUBITO con l'ultima posizione ricordata (o il
-   default Follonica) senza aspettare il GPS; il prompt GPS compare solo alla
-   prima visita in assoluto, poi resta disponibile dal pulsante «Posizione». */
-const posSalvata = leggiPosizione();
-if (posSalvata && isFinite(posSalvata.lat) && isFinite(posSalvata.lon)){
-  stato.lat = posSalvata.lat; stato.lon = posSalvata.lon;
-  stato.nomeLuogo = posSalvata.nome || "posizione salvata";
-  stato.origine = posSalvata.origine || "manuale";
-}
-aggiornaSpiaPosizione();
-caricaDati();
-if (!posSalvata) richiediGPS();  // solo prima visita: se accordato, affina e ricorda
-setInterval(() => { if (!stato.demo) caricaDati(); aggiornaSIR(); }, REFRESH_MINUTI*60*1000);
-setInterval(aggiornaEtaDati, 60*1000);   // spia "dati vecchi" sempre aggiornata
-
-/* ==========================================================================
-   NOTA DI VERIFICA PARAMETRI (trasparenza richiesta dal committente)
-   --------------------------------------------------------------------------
-   L'ambiente di sviluppo non aveva accesso diretto a open-meteo.com (proxy
-   con blocco 403), quindi niente chiamata di test live. Nomenclatura usata:
-   snake_case post-2023 (wind_speed_10m, cloud_cover, weather_code — i vecchi
-   alias windspeed_10m/cloudcover/weathercode restano accettati), con
-   cross-check via documentazione di terze parti per: wind_speed_10m,
-   pressure_msl, precipitation_probability, uv_index, wave_height/direction/
-   period, wind_wave_*, swell_wave_height/direction/period,
-   sea_surface_temperature. DA RICONTROLLARE alla prima apertura con rete
-   vera: il blocco "current=" della Marine API (parte meno cross-verificata).
-   Se un parametro fosse invalido l'API risponde {"error":true,"reason":…}
-   e l'avviso rosso di questa pagina lo mostra; per la temperatura del mare
-   c'è già il fallback sulla prima ora dello hourly. sea_surface_temperature
-   può essere null sotto costa: gestito come "n.d.", non è un errore.
-   ========================================================================== */
-</script>
+<script src="js/logica.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

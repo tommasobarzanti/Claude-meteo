@@ -1,25 +1,38 @@
 # Vedetta — console meteo-mare
 
-Dashboard meteo-marina per Assistenti Bagnanti (Follonica, litorale tirrenico).
-Un unico file `index.html` senza dipendenze: HTML, CSS e JS inline.
+App web per Assistenti Bagnanti (Follonica, litorale tirrenico): bandiera
+calcolata, vento, onde, pioggia, allerta temporale e radar. Si installa sul
+telefono come un'app e mostra gli ultimi dati reali anche senza rete.
 
-- **Dati**: [Open-Meteo Forecast API](https://open-meteo.com/en/docs) (atmosfera,
-  modello best_match: ECMWF IFS + DWD ICON, GFS a riempimento) e
-  [Marine Weather API](https://open-meteo.com/en/docs/marine-weather-api)
-  (onde e temperatura del mare, Météo-France MFWAM / ECMWF WAM). Nessuna API key.
-- **Vista tecnica**: condizioni attuali, grafici 48 h con soglie bandiera,
-  registro orario 72 h.
-- **Pannello bagnanti**: bandiera verde/gialla/rossa calcolata da vento e onda
-  (scale Beaufort/Douglas, soglie modificabili nelle costanti in cima allo
-  script), sempre ad alto contrasto su fondo chiaro.
-- **Posizione**: GPS con fallback su Follonica (42.92 N, 10.76 E), inserimento
-  manuale o ricerca luogo.
+**Apri:** https://tommasobarzanti.github.io/Claude-meteo/ — poi "Aggiungi a
+schermata Home" (Safari) o "Installa app" (Chrome).
 
-## Uso
+## Viste
 
-Apri `index.html` in un browser (doppio clic) oppure la versione pubblicata
-con GitHub Pages da questo repository. Se la rete è bloccata la pagina offre
-una modalità dimostrativa, sempre marcata "dati non reali".
+- **Previsione** — condizioni attuali con bandiera, prossime 6 ore, grafici
+  48 h di vento, onda e pioggia con le soglie bandiera, registro orario 72 h,
+  link "seconda opinione" (3BMeteo, IlMeteo, MeteoAM, meteoblue).
+- **Bagnino** — pannello da mostrare ai bagnanti, sempre ad alto contrasto:
+  bandiera, aria e cielo, mare, UV, onde, vento e pioggia della giornata.
+- **Radar** — radar pioggia RainViewer a tutto schermo.
+
+## Dati
+
+[Open-Meteo](https://open-meteo.com) Forecast e Marine (CC BY 4.0, nessuna
+chiave) e radar [RainViewer](https://www.rainviewer.com). L'API gratuita di
+Open-Meteo è solo per uso non commerciale.
+
+## Sviluppo
+
+Nessun framework e nessun build step. Le soglie operative (bandiera, pioggia,
+temporale) sono in cima a `js/logica.js`.
+
+```
+npm test          # test della logica (Node 20+, nessuna dipendenza)
+```
+
+Il deploy su GitHub Pages parte a ogni push sul branch predefinito, solo se i
+test passano. Dettagli e backlog in [docs/REPORT.md](docs/REPORT.md).
 
 La bandiera calcolata è un supporto: la decisione finale spetta sempre
 all'Assistente Bagnanti in servizio secondo l'ordinanza balneare vigente.

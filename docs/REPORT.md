@@ -1,7 +1,7 @@
 # Vedetta — Report tecnico
 
 **Progetto:** console meteo-mare per Assistenti Bagnanti · Follonica (GR)
-**Data report:** 2 agosto 2026 · **Versione:** v3.1 (commit sul branch predefinito)
+**Data report:** 22 settembre 2026 · **Versione:** v4 (app installabile)
 **Produzione:** https://tommasobarzanti.github.io/Claude-meteo/
 **Repository:** github.com/tommasobarzanti/Claude-meteo
 
@@ -9,118 +9,128 @@
 
 ## 1. Sintesi
 
-Applicazione web a **file singolo** (`index.html`, ~1.300 righe: CSS + JS inline,
-zero dipendenze, zero build step) che aggrega previsioni atmosferiche e marine
-per una postazione di salvataggio. Due viste: **Tecnica** (operatore) e
-**Bagnino** (informazioni da comunicare ai bagnanti). Deploy automatico su
-GitHub Pages via GitHub Actions. Dopo una settimana di uso reale sono stati
-risolti i tre difetti principali emersi (avvio lento per colpa del GPS, dialog
-posizione macchinoso, mancanza di fonti multiple) e riprogettata la vista
-pubblica secondo il feedback dell'utente finale.
+La v4 è il primo passo della ristrutturazione di fine stagione. Il prodotto
+non cambia direzione (l'uso reale l'ha validata); cambia il contenitore:
+
+- da un file unico di 1.750 righe a **file separati** con la logica pura
+  isolata e **coperta da test automatici** che bloccano il deploy se falliscono;
+- da pagina web ad **app installabile** (PWA) che si apre e mostra gli ultimi
+  dati reali **anche senza rete**;
+- **design da app**: barra delle viste in basso, testata compatta, radar a
+  schermo intero, cielo descritto a parole;
+- **pulizia**: via modalità demo, modulo SIR, fonte Tomorrow.io, selettore tema.
 
 ## 2. Architettura
 
 ```
-index.html (unico deliverable)
-├── CSS: design token su :root, tema chiaro/scuro via prefers-color-scheme
-│        + data-theme override; pannello Bagnino SEMPRE chiaro (lettura al sole)
-├── HTML: testata sticky → tab Tecnica/Bagnino → card
-└── JS (vanilla, nessuna libreria)
-    ├── Costanti operative (soglie bandiera, refresh, retry) — in cima, modificabili
-    ├── Data layer: fetch parallele con Promise.allSettled + retry/backoff 2/4/8 s
-    ├── Stato di sessione in oggetto `stato` + localStorage SOLO per la posizione
-    │   (con guardia try/catch: si degrada dove lo storage non c'è, es. artifact)
-    ├── Render: funzioni pure per card/tabella/grafici canvas DPR-aware
-    └── Modalità demo etichettata (dati sintetici) quando la rete è bloccata
+index.html              solo struttura: testata, 3 viste, barra, dialog posizione
+css/vedetta.css         token colore chiaro/scuro (segue il telefono), layout app
+js/logica.js            logica pura: soglie in cima, bandiera, sintesi, allerte,
+                        validità dati salvati. Nessun DOM, nessuna rete → testabile
+js/app.js               rete (retry/backoff), stato, grafici canvas, viste, posizione
+sw.js                   service worker: file dell'app disponibili offline
+manifest.webmanifest    nome, icone, colori dell'app installata
+icons/                  icona (SVG sorgente + PNG 180/192/512 + maskable)
+tests/logica.test.js    13 test (node:test, zero dipendenze)
+tests/fixture.js        dati di prova con la forma delle risposte Open-Meteo
 ```
 
-**Scelte deliberate:** niente framework né bundler (deploy = copia di un file);
-canvas nativo per i grafici (CSP-safe, nessun CDN); tipografia di sistema
-(niente webfont esterni, bloccabili); i colori serie dei grafici sono validati
-per contrasto ≥3:1 e daltonismo (CVD ΔE) in entrambi i temi.
+Ancora **nessun framework e nessun build step**: script classici (funzionano
+anche aprendo il file dal disco), deploy = copia dei file. Il workflow
+pubblica solo i file dell'app, non test e documentazione.
 
-## 3. Fonti dati
+## 3. Funzionamento senza rete
+
+Due livelli, volutamente separati:
+
+1. **L'app** (HTML/CSS/JS/icone) la tiene il service worker, con strategia
+   "prima la rete": online si vede sempre l'ultima versione pubblicata.
+2. **I dati** li salva l'app a ogni aggiornamento riuscito (ultima posizione).
+   All'apertura compaiono **subito**, prima ancora della rete; se la rete
+   manca restano a schermo con l'avviso "Senza rete · dati delle HH:MM" e
+   l'orario in testata diventa rosso oltre i 20 minuti.
+
+Regole di sicurezza (coperte da test): i dati salvati valgono solo per la
+**stessa posizione** e solo se coprono ancora **almeno 6 ore future**; con
+dati non freschi il blocco "adesso" si ricava dall'ora in corso della serie
+oraria, non dal valore istantaneo di ore prima; cambiando posizione i numeri
+del posto precedente spariscono subito. La modalità demo non esiste più:
+senza rete e senza dati salvati l'app lo dice e non mostra numeri.
+
+## 4. Design da app — valutazione e interventi
+
+| Problema (v3.2 usata come app) | Intervento v4 |
+|---|---|
+| Testata alta ~170 px: 20% dello schermo perso, sempre | Testata di 58 px: marchio + orario dati, luogo, aggiorna |
+| Schede in alto, lontane dal pollice | **Barra delle viste in basso** (Previsione / Bagnino / Radar), bersagli ≥ 48 px; su schermi larghi diventa un controllo a segmenti |
+| Radar come card a metà pagina, alto 62% della larghezza | Vista dedicata **a tutta altezza**; caricato solo quando la apri (niente traffico inutile) |
+| Coordinate e due "pillole" di stato sempre visibili | Un solo chip con il nome del luogo; coordinate nel dialog; avviso giallo solo se la posizione è quella di default |
+| Registro 72 h sempre aperto: pagina lunghissima | Chiuso di default, si apre con un tocco |
+| Il cielo non era mai detto a parole | "sereno", "rovesci", "temporale"… nel blocco Adesso, nelle prossime ore e nel pannello Bagnino |
+| Selettore tema manuale | Segue il telefono; il pannello Bagnino resta sempre chiaro per il sole |
+| Nessuna icona né comportamento da app | Icona dedicata (bandiera tra le onde, versione maskable per Android), colore barra di stato, margini per notch e barra home |
+
+Ordine della vista Previsione pensato per il primo colpo d'occhio: allerta
+temporale → Adesso (bandiera + 6 strumenti) → Prossime 6 ore → grafici 48 h.
+Su un telefono da 6,1" Adesso e la prima fila delle prossime ore stanno nel
+primo schermo senza scorrere.
+
+**Scelte volutamente non fatte:** app nativa sugli store (costo di sviluppo e
+revisione non giustificato: la PWA si installa dalla home e funziona offline);
+pull-to-refresh (conflitti con lo scroll e con la mappa radar; c'è il tasto e
+l'aggiornamento automatico ogni 12 minuti).
+
+## 5. Fonti dati
 
 | Fonte | Uso | Note |
 |---|---|---|
-| Open-Meteo Forecast (`best_match`) | pipeline principale 72 h | ECMWF IFS + DWD ICON, GFS a riempimento |
+| Open-Meteo Forecast (`best_match`) | previsione 72 h | ECMWF IFS + DWD ICON, GFS a riempimento |
 | Open-Meteo Marine | onde, swell, T mare | MFWAM / ECMWF WAM |
-| RainViewer (embed) | card "Radar pioggia": mappa interattiva | radar osservato + nowcast a brevissimo termine, nessuna chiave |
-| Open-Meteo Geocoding | ricerca luogo nel dialog posizione | |
-| SIR Toscana | modulo opzionale, spento | serve un proxy proprio (niente CORS sul portale) |
+| RainViewer (embed) | vista Radar | radar osservato + tendenza a brevissimo termine |
+| Open-Meteo Geocoding | ricerca luogo | |
+| 3BMeteo, IlMeteo, MeteoAM, meteoblue | "Seconda opinione": solo link | nessuna API pubblica leggibile dal browser |
 
-**Confronto con 3BMeteo / IlMeteo (richiesta utente):** entrambe le testate
-non espongono API pubbliche leggibili dal browser (3BMeteo vende un'API
-commerciale; IlMeteo non ne ha; lo scraping è bloccato dal CORS e vietato dai
-ToS). Come concordato, **nessun confronto numerico in pagina**: la card
-"Seconda opinione" apre con un tocco la previsione della fonte originale
-(3BMeteo, IlMeteo, MeteoAM, meteoblue) già puntata sulla zona. La precedente
-card di confronto multi-modello è stata rimossa su feedback utente.
+**Licenze, da risolvere prima di vendere:** l'API gratuita di Open-Meteo è solo
+per uso non commerciale (piano commerciale da ~29 €/mese); GitHub Pages non è
+pensato per prodotti commerciali (Cloudflare Pages/Netlify, ~0 €).
 
-### ⚠ Licenze — punto critico per la monetizzazione
-- **Open-Meteo API gratuita: solo uso NON commerciale.** Un prodotto a
-  pagamento richiede il piano API commerciale (da ~29 €/mese) o un cambio di
-  provider. Da budgetizzare PRIMA di qualsiasi vendita.
-- **MET Norway:** gratuita anche per uso commerciale ma richiede attribuzione
-  (presente nel footer) e User-Agent identificativo sul traffico intenso; con
-  un backend proprio si risolve pulitamente.
-- GitHub Pages vieta siti commerciali "primarily" transazionali; per un
-  prodotto vero servirà un hosting dedicato (Cloudflare Pages/Netlify, ~0 €).
+## 6. Qualità e test
 
-## 4. Qualità e test
+**Automatici (bloccano il deploy):** 13 test su bandiera e soglie ai bordi,
+dati mancanti, punti cardinali, scale Beaufort/Douglas, cielo WMO, tendenza
+pressione, ora corrente con dati scaduti, passaggio a "domani" dopo le 21,
+sintesi vento e pioggia, allerta temporale (in corso / entro 12 h / oltre),
+validità dei dati salvati (posizione e ore residue).
 
-**Coperto:** sintassi JS verificata a ogni build (`node --check`); smoke test
-Playwright/Chromium su 5 scenari (mobile chiaro/scuro, desktop, hover grafici,
-vista Bagnino) con cattura degli errori console — zero errori JS; palette
-grafici validata con validatore CVD/contrasto in entrambi i temi; percorso di
-errore rete testato realmente (l'ambiente di sviluppo bloccava le API: il
-banner e la modalità demo nascono da lì).
+**Manuali in Chromium, a ogni rilascio:** telefono chiaro e scuro, desktop, tre
+viste, dialog posizione, service worker attivo, riapertura **offline** con dati
+salvati, primo avvio senza rete né dati (nessun numero a schermo). Zero errori
+JavaScript. Le chiamate Open-Meteo sono servite con i dati di prova perché
+l'ambiente di sviluppo non raggiunge le API.
 
-**Non coperto (rischi residui):**
-1. Blocco `current=` dell'API Marine mai testato con rete vera — se un
-   parametro fosse invalido l'errore compare nel banner rosso ed esiste già il
-   fallback sulla serie oraria. **Da verificare alla prima apertura.**
-2. Parametri dell'URL embed RainViewer da conoscenza, non verificabili live
-   dall'ambiente di sviluppo: la mappa tollera parametri ignoti (carica con i
-   default), quindi il rischio è solo di zoom/centratura non ottimali.
-3. Nessun test automatico di regressione sul calcolo bandiera (v. backlog).
+**Rischi residui:** blocco `current=` dell'API Marine e URL dell'embed
+RainViewer mai verificati con rete vera da qui. Entrambi degradano senza
+danni: fallback sulla serie oraria e mappa che si apre con i valori
+predefiniti.
 
-## 5. Problemi noti risolti in v3 (feedback settimana di prova)
+## 7. Backlog
 
-| Feedback | Intervento |
-|---|---|
-| «GPS laborioso, graficamente scarso» | Avvio **istantaneo**: si parte con l'ultima posizione ricordata (localStorage) o Follonica, senza aspettare il fix; prompt GPS solo alla prima visita; dialog ridisegnato con scorciatoie (GPS / Follonica), ricerca che si applica al tocco, coordinate manuali nascoste sotto "avanzate" |
-| «Più dati da altre fonti» | Scheda Confronto modelli (3 modelli + MET Norway) con indicatore di accordo |
-| «"Bagnanti" → "Bagnino", vento della giornata» | Tab rinominato; nel pannello: barre orarie 6–21 colorate con le soglie bandiera + sintesi "si alza alle X · massimo Y km/h alle Z · cala dopo le W"; dopo le 21 passa da solo a domani |
-| Push su `main` annullava il deploy buono | Trigger del workflow ristretto al branch predefinito (l'ambiente `github-pages` rifiuta gli altri) |
+**P1 — completa il primo passo**
+- Rendere `main` il branch predefinito (Settings → General) e aggiornare la
+  riga `branches:` del workflow: oggi il deploy parte dal branch di sviluppo.
+- Allerta "ingresso in zona bandiera gialla/rossa previsto alle 14".
 
-## 6. Backlog prioritizzato
-
-**P1 — prossima iterazione**
-- Verifica live dei 3 punti in §4 e correzione eventuale (10 minuti con rete vera).
-- PWA: manifest + service worker → icona home "vera", cache offline dell'ultimo
-  dato (in postazione il segnale va e viene).
-- Test unitari del calcolo bandiera e della sintesi vento (i due algoritmi con
-  responsabilità di sicurezza) — estraibili in modulo puro testabile.
-
-**P2 — valore operativo**
-- Multi-spot: elenco posizioni salvate (stabilimento, boa, spot surf) con
-  switch a un tocco.
-- Allerta visiva quando la previsione supererà le soglie bandiera nelle
-  prossime N ore ("alle 14 previsto ingresso in zona gialla").
-- Pressione: mini-grafico 24 h al posto della sola freccia.
+**P2 — secondo passo (piccolo server intermedio, es. Cloudflare Worker)**
+- Allerte ufficiali: Centro Funzionale Regionale Toscana e Meteoalarm.
+- Chiave commerciale Open-Meteo lato server, cache condivisa delle chiamate.
+- Stazione SIR Toscana come dato osservato (tolto dalla v4 finché non c'è il server).
 
 **P3 — prodotto**
-- Backend leggero (Cloudflare Worker): cache condivisa delle chiamate API
-  (una sola fetch per tutti gli utenti), chiavi commerciali server-side,
-  proxy SIR Toscana.
-- Multi-tenant per stabilimenti (logo, soglie da ordinanza locale, QR code da
-  esporre in spiaggia per i bagnanti).
-- Storico condizioni + export (registro giornaliero del bagnino).
+- Più stabilimenti con soglie da ordinanza, logo, QR code per i bagnanti.
+- Alba/tramonto e fine servizio; più posizioni salvate; registro giornaliero.
 
-## 7. Nota di manutenzione
+## 8. Manutenzione
 
-Se il branch predefinito del repo verrà cambiato in `main`, aggiornare la
-riga `branches:` in `.github/workflows/pages.yml` (commento già nel file).
-Le soglie bandiera sono in `BANDIERA_SOGLIE`; qualsiasi taratura
-dall'ordinanza della Capitaneria si fa lì, senza toccare la logica.
+- Soglie: in cima a `js/logica.js`. Dopo una modifica, `npm test`.
+- Nuovo rilascio che cambia i file dell'app: incrementare `VERSIONE` in `sw.js`.
+- Icona: modificare `icons/icona.svg` / `icona-maskable.svg` e rigenerare i PNG.

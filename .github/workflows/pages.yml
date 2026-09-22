@@ -18,7 +18,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/logica.test.js
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -28,8 +38,12 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Prepara solo i file dell'app
+        run: |
+          mkdir _sito
+          cp -r index.html sw.js manifest.webmanifest css js icons _sito/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _sito
       - id: deployment
         uses: actions/deploy-pages@v4

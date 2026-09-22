@@ -1,0 +1,16 @@
+{
+  "name": "Vedetta — meteo-mare",
+  "short_name": "Vedetta",
+  "description": "Console meteo-mare per Assistenti Bagnanti: bandiera, vento, onde, pioggia, allerta temporale e radar.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EDF3F3",
+  "theme_color": "#EDF3F3",
+  "icons": [
+    { "src": "icons/icona-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icona-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

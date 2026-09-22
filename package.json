@@ -1,0 +1,8 @@
+{
+  "name": "vedetta",
+  "private": true,
+  "description": "Console meteo-mare per Assistenti Bagnanti",
+  "scripts": {
+    "test": "node --test tests/logica.test.js"
+  }
+}
