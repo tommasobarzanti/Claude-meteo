@@ -3,6 +3,11 @@
   "private": true,
   "description": "Console meteo-mare per Assistenti Bagnanti",
   "scripts": {
-    "test": "node --test tests/logica.test.js"
+    "test": "node --test tests/logica.test.js",
+    "test:browser": "node --test --test-concurrency=1 tests/browser.test.js",
+    "test:tutto": "npm test && npm run test:browser"
+  },
+  "devDependencies": {
+    "playwright-core": "1.56.1"
   }
 }

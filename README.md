@@ -28,11 +28,20 @@ Nessun framework e nessun build step. Le soglie operative (bandiera, pioggia,
 temporale) sono in cima a `js/logica.js`.
 
 ```
-npm test          # test della logica (Node 20+, nessuna dipendenza)
+npm install              # una volta: scarica playwright-core
+npm test                 # test della logica (bandiera, sintesi, allerte)
+npm run test:browser     # prove dell'app in Chromium, senza rete
+npm run test:tutto       # entrambi
 ```
 
-Il deploy su GitHub Pages parte a ogni push sul branch predefinito, solo se i
-test passano. Dettagli e backlog in [docs/REPORT.md](docs/REPORT.md).
+Le prove nel browser servono l'app da un server locale e rispondono alle
+chiamate Open-Meteo con i dati di prova di `tests/fixture.js`; gli screenshot
+di ogni prova finiscono in `tests/.screenshot/`. Se Chromium non viene
+trovato: `npx playwright-core install chromium`, oppure indicare un Chromium
+già installato con la variabile `VEDETTA_CHROMIUM`.
+
+Il deploy su GitHub Pages parte a ogni push sul branch predefinito, solo se
+entrambi i gruppi di test passano. Dettagli e backlog in [docs/REPORT.md](docs/REPORT.md).
 
 La bandiera calcolata è un supporto: la decisione finale spetta sempre
 all'Assistente Bagnanti in servizio secondo l'ordinanza balneare vigente.

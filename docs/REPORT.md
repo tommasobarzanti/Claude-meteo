@@ -31,7 +31,8 @@ js/app.js               rete (retry/backoff), stato, grafici canvas, viste, posi
 sw.js                   service worker: file dell'app disponibili offline
 manifest.webmanifest    nome, icone, colori dell'app installata
 icons/                  icona (SVG sorgente + PNG 180/192/512 + maskable)
-tests/logica.test.js    13 test (node:test, zero dipendenze)
+tests/logica.test.js    13 test della logica (node:test, zero dipendenze)
+tests/browser.test.js   8 prove dell'app in Chromium (playwright-core, solo sviluppo)
 tests/fixture.js        dati di prova con la forma delle risposte Open-Meteo
 ```
 
@@ -102,11 +103,16 @@ pressione, ora corrente con dati scaduti, passaggio a "domani" dopo le 21,
 sintesi vento e pioggia, allerta temporale (in corso / entro 12 h / oltre),
 validità dei dati salvati (posizione e ore residue).
 
-**Manuali in Chromium, a ogni rilascio:** telefono chiaro e scuro, desktop, tre
-viste, dialog posizione, service worker attivo, riapertura **offline** con dati
-salvati, primo avvio senza rete né dati (nessun numero a schermo). Zero errori
-JavaScript. Le chiamate Open-Meteo sono servite con i dati di prova perché
-l'ambiente di sviluppo non raggiunge le API.
+**Prove nel browser, anche queste automatiche (`tests/browser.test.js`):** 8
+prove in Chromium con server locale e dati di prova al posto di Open-Meteo:
+apertura con dati, allerta temporale, tre viste (Bagnino con sintesi, Radar
+centrato sulla posizione), vista ricordata, riapertura **offline** con i dati
+salvati tramite service worker, primo avvio senza rete né dati (nessun
+numero), cambio di posizione che non lascia a schermo i numeri del posto
+precedente, tema scuro e desktop senza errori JavaScript. Controprova fatta:
+due guasti introdotti apposta (dati salvati mai riletti, dati vecchi lasciati
+dopo il cambio posizione) fanno fallire esattamente le prove 5 e 7. Su GitHub,
+se falliscono, gli screenshot si scaricano dalla pagina del run.
 
 **Rischi residui:** blocco `current=` dell'API Marine e URL dell'embed
 RainViewer mai verificati con rete vera da qui. Entrambi degradano senza
