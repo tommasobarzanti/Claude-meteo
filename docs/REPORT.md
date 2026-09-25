@@ -121,9 +121,7 @@ predefiniti.
 
 ## 7. Backlog
 
-**P1 — completa il primo passo**
-- Rendere `main` il branch predefinito (Settings → General) e aggiornare la
-  riga `branches:` del workflow: oggi il deploy parte dal branch di sviluppo.
+**P1 — prossimo**
 - Allerta "ingresso in zona bandiera gialla/rossa previsto alle 14".
 
 **P2 — secondo passo (piccolo server intermedio, es. Cloudflare Worker)**

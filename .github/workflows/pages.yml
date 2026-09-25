@@ -1,11 +1,10 @@
 name: Pubblica su GitHub Pages
 
-# Il deploy parte solo dal branch PREDEFINITO del repo: l'ambiente github-pages
-# rifiuta i deploy dagli altri branch. Se in futuro il predefinito diventa main,
-# aggiorna la riga "branches".
+# Il deploy parte solo da main, il branch predefinito del repo: l'ambiente
+# github-pages rifiuta i deploy dagli altri branch.
 on:
   push:
-    branches: [claude/follonica-marine-weather-dashboard-vnh6rr]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
